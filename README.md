@@ -6,6 +6,7 @@
 
 - **wrgroup**: A wrapper around `sync.WaitGroup` with a custom panic handler.
 - **wrpool**: A worker pool for managing and executing tasks concurrently with optional error and panic handling.
+- **wrtask**: Package provides a TaskGroup structure for running and managing multiple concurrent tasks with support for context and interruption.
 
 ## Installation
 
@@ -48,7 +49,43 @@ pool.Go(func() error {
 })
 ```
 
+#### Tasks
+
+```go
+group := wrtask.New()
+
+group.Add(wrtask.SignalHandler(context.TODO(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM))
+log.Println("We're waiting for 5 seconds, giving you an opportunity to gracefully exit the program.")
+
+// Actor 1: performs a long operation
+group.AddContext(func(ctx context.Context) error {
+	log.Println("Actor 1 working...")
+	<-ctx.Done()
+	log.Println("Actor 1 stopped")
+	return nil
+}, func(context.Context, error) {
+	log.Println("Actor 1 interrupted")
+})
+
+// Actor 2: returns an error
+group.Add(func() error {
+	log.Println("Actor 2 working...")
+	time.Sleep(5 * time.Second)
+	log.Println("Actor 2 stopped")
+	return errors.New("error in actor 2")
+}, func(error) {
+	log.Println("Actor 2 interrupted")
+})
+
+// Run all actors and wait for their completion
+if err := group.Run(); err != nil {
+	log.Println("Error in group:", err)
+}
+```
+
 ### Benchmark
+
+#### Pool
 
 - [pond](github.com/alitto/pond)
 - [gopool](github.com/devchat-ai/gopool)

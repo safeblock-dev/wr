@@ -21,7 +21,6 @@ linters:
     - exhaustive # checks exhaustiveness of enum switch statements
     - exportloopref # checks for pointers to enclosing loop variables
     - forbidigo # forbids identifiers
-    - funlen # tool for detection of long functions
     - gocheckcompilerdirectives # validates go compiler directive comments (//go:)
     - gochecknoglobals # checks that no global variables exist
     - gochecknoinits # checks that no init functions are present in Go code
@@ -73,7 +72,6 @@ linters:
     - godox # detects FIXME, TODO and other comment keywords
     - prealloc # [premature optimization, but can be used in some cases] finds slice declarations that could potentially be preallocated
     - tagalign # checks that struct tags are well aligned
-    - wrapcheck # checks that errors returned from external packages are wrapped
     - dogsled # checks assignments with too many blank identifiers (e.g. x, _, _, _, := f())
     - maintidx # measures the maintainability index of each function
     - misspell # [useless] finds commonly misspelled English words in comments
