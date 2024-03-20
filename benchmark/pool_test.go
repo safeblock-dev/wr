@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	maxGoroutines = 30
+	maxPoolGoroutines = 30
 )
 
-func BenchmarkWr(b *testing.B) {
-	pool := wrpool.New(wrpool.MaxGoroutines(maxGoroutines))
+func BenchmarkWrPool(b *testing.B) {
+	pool := wrpool.New(wrpool.MaxGoroutines(maxPoolGoroutines))
 	defer pool.Wait()
 
 	b.ResetTimer()
@@ -35,7 +35,7 @@ func BenchmarkWr(b *testing.B) {
 }
 
 func BenchmarkConcErrorPool(b *testing.B) {
-	pool := concPool.New().WithMaxGoroutines(maxGoroutines).WithErrors()
+	pool := concPool.New().WithMaxGoroutines(maxPoolGoroutines).WithErrors()
 	defer pool.Wait()
 
 	b.ResetTimer()
@@ -52,7 +52,7 @@ func BenchmarkConcErrorPool(b *testing.B) {
 }
 
 func BenchmarkGopool(b *testing.B) {
-	pool := gopool.NewGoPool(maxGoroutines)
+	pool := gopool.NewGoPool(maxPoolGoroutines)
 	defer pool.Release()
 	defer pool.Wait()
 
@@ -71,7 +71,7 @@ func BenchmarkGopool(b *testing.B) {
 
 func BenchmarkAnts(b *testing.B) {
 	var wg sync.WaitGroup
-	p, _ := ants.NewPool(maxGoroutines)
+	p, _ := ants.NewPool(maxPoolGoroutines)
 	defer p.Release()
 	defer wg.Wait()
 
@@ -90,7 +90,7 @@ func BenchmarkAnts(b *testing.B) {
 }
 
 func BenchmarkPond(b *testing.B) {
-	pool := pond.New(maxGoroutines, 0, pond.MinWorkers(maxGoroutines))
+	pool := pond.New(maxPoolGoroutines, 0, pond.MinWorkers(maxPoolGoroutines))
 	defer pool.StopAndWait()
 
 	b.ResetTimer()
