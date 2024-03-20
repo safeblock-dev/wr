@@ -18,6 +18,7 @@ go get github.com/safeblock-dev/wr
 
 - [WaitingGroup](example/waitgroup/main.go)
 - [Pool](example/pool/main.go)
+- [TaskGroup](example/task_group/main.go)
 
 #### WaitingGroup
 
