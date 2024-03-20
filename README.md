@@ -88,6 +88,16 @@ log.Println("Error in group:", err)
 
 ### Benchmark
 
+- [conc](github.com/sourcegraph/conc)
+
+#### WaitingGroup
+
+| Benchmark            | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
+|----------------------|------------|--------------|---------------|-------------------------|
+| BenchmarkWrGroup-8   | 5138682    | 3489         | 736           | 42                      |
+| BenchmarkConcGroup-8 | 4442769    | 3601         | 734           | 42                      |
+
+
 #### Pool
 
 - [pond](github.com/alitto/pond)
