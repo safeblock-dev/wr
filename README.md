@@ -35,7 +35,7 @@ wg.Wait()
 ctx, cancel := context.WithCancel(context.Background())
 defer cancel()
 
-pool := wrpool.New(
+pool := wr.NewPool(
     wrpool.Context(ctx),
     wrpool.MaxGoroutines(5),
 )
