@@ -1,11 +1,11 @@
-package wrtask_test
+package taskgroup_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/safeblock-dev/wr/wrtask"
+	"github.com/safeblock-dev/wr/taskgroup"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,17 +15,17 @@ func TestTaskGroup_Add(t *testing.T) {
 	t.Run("add nil execute function", func(t *testing.T) {
 		t.Parallel()
 
-		tasks := wrtask.New()
+		tasks := taskgroup.New()
 
 		require.Panics(t, func() {
-			tasks.Add(nil, wrtask.SkipInterrupt())
+			tasks.Add(nil, taskgroup.SkipInterrupt())
 		}, "expected panic when adding an actor with a nil execute function")
 	})
 
 	t.Run("add nil interrupt function", func(t *testing.T) {
 		t.Parallel()
 
-		tasks := wrtask.New()
+		tasks := taskgroup.New()
 
 		require.Panics(t, func() {
 			tasks.Add(func() error { return nil }, nil)
@@ -39,7 +39,7 @@ func TestTaskGroup_AddContext(t *testing.T) {
 	t.Run("should complete successfully with context", func(t *testing.T) {
 		t.Parallel()
 
-		group := wrtask.New()
+		group := taskgroup.New()
 		var (
 			interrupted = false
 			syncer      = make(chan struct{})
@@ -49,7 +49,7 @@ func TestTaskGroup_AddContext(t *testing.T) {
 			<-syncer
 
 			return nil
-		}, wrtask.SkipInterrupt())
+		}, taskgroup.SkipInterrupt())
 		group.AddContext(func(ctx context.Context) error {
 			syncer <- struct{}{}
 			<-ctx.Done()
@@ -67,7 +67,7 @@ func TestTaskGroup_AddContext(t *testing.T) {
 	t.Run("should interrupt task on error", func(t *testing.T) {
 		t.Parallel()
 
-		group := wrtask.New()
+		group := taskgroup.New()
 		var interrupted bool
 
 		group.AddContext(func(_ context.Context) error {
@@ -84,7 +84,7 @@ func TestTaskGroup_AddContext(t *testing.T) {
 	t.Run("add nil execute function", func(t *testing.T) {
 		t.Parallel()
 
-		tasks := wrtask.New()
+		tasks := taskgroup.New()
 
 		require.Panics(t, func() {
 			tasks.AddContext(nil, func(_ context.Context, _ error) {})
@@ -94,7 +94,7 @@ func TestTaskGroup_AddContext(t *testing.T) {
 	t.Run("add nil interrupt function", func(t *testing.T) {
 		t.Parallel()
 
-		tasks := wrtask.New()
+		tasks := taskgroup.New()
 
 		require.Panics(t, func() {
 			tasks.AddContext(func(_ context.Context) error { return nil }, nil)
@@ -108,7 +108,7 @@ func TestTaskGroup_Run(t *testing.T) {
 	t.Run("should complete successfully with no tasks", func(t *testing.T) {
 		t.Parallel()
 
-		group := wrtask.New()
+		group := taskgroup.New()
 		err := group.Run()
 		require.NoError(t, err)
 	})
@@ -116,12 +116,12 @@ func TestTaskGroup_Run(t *testing.T) {
 	t.Run("should return error from task", func(t *testing.T) {
 		t.Parallel()
 
-		group := wrtask.New()
+		group := taskgroup.New()
 		expectedErr := errors.New("task error")
 
 		group.Add(func() error {
 			return expectedErr
-		}, wrtask.SkipInterrupt())
+		}, taskgroup.SkipInterrupt())
 
 		err := group.Run()
 		require.ErrorIs(t, err, expectedErr)
@@ -130,7 +130,7 @@ func TestTaskGroup_Run(t *testing.T) {
 	t.Run("should interrupt other tasks when one returns", func(t *testing.T) {
 		t.Parallel()
 
-		group := wrtask.New()
+		group := taskgroup.New()
 		interrupted := false
 
 		group.Add(func() error {
@@ -141,7 +141,7 @@ func TestTaskGroup_Run(t *testing.T) {
 
 		group.Add(func() error {
 			return errors.New("returning early")
-		}, wrtask.SkipInterrupt())
+		}, taskgroup.SkipInterrupt())
 
 		err := group.Run()
 		require.Error(t, err)
@@ -151,12 +151,12 @@ func TestTaskGroup_Run(t *testing.T) {
 	t.Run("should handle panic in task", func(t *testing.T) {
 		t.Parallel()
 
-		group := wrtask.New()
+		group := taskgroup.New()
 		panicValue := "test panic"
 
 		group.Add(func() error {
 			panic(panicValue)
-		}, wrtask.SkipInterrupt())
+		}, taskgroup.SkipInterrupt())
 
 		err := group.Run()
 		require.Error(t, err)
@@ -168,17 +168,17 @@ func TestTaskGroup_Run(t *testing.T) {
 
 		var result [3]bool
 
-		group := wrtask.New()
+		group := taskgroup.New()
 		group.Add(func() error {
 			result[0] = !result[0]
 
 			return nil
-		}, wrtask.SkipInterrupt())
+		}, taskgroup.SkipInterrupt())
 		group.Add(func() error {
 			result[1] = !result[1]
 
 			return nil
-		}, wrtask.SkipInterrupt())
+		}, taskgroup.SkipInterrupt())
 
 		require.NoError(t, group.Run())
 		require.Equal(t, [3]bool{true, true, false}, result)
@@ -187,7 +187,7 @@ func TestTaskGroup_Run(t *testing.T) {
 			result[2] = !result[2]
 
 			return nil
-		}, wrtask.SkipInterrupt())
+		}, taskgroup.SkipInterrupt())
 
 		require.NoError(t, group.Run())
 		require.Equal(t, [3]bool{false, false, true}, result)
@@ -197,8 +197,8 @@ func TestTaskGroup_Run(t *testing.T) {
 func TestTaskGroup_Size(t *testing.T) {
 	t.Parallel()
 
-	tasks := wrtask.New()
-	tasks.Add(func() error { return nil }, wrtask.SkipInterrupt())
+	tasks := taskgroup.New()
+	tasks.Add(func() error { return nil }, taskgroup.SkipInterrupt())
 
 	require.Equal(t, 1, tasks.Size())
 }

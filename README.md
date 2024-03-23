@@ -7,7 +7,8 @@ custom `WaitGroup` implementation with panic handling and a flexible worker pool
 
 - **syncgroup**: A wrapper around `sync.WaitGroup` with a custom panic handler.
 - **gopool**: A worker pool for managing and executing tasks concurrently with optional error and panic handling.
-- **wrtask**: Package provides a TaskGroup structure for running and managing multiple concurrent tasks with support for
+- **taskgroup**: Package provides a TaskGroup structure for running and managing multiple concurrent tasks with support
+  for
   context and interruption.
 
 ## Installation
@@ -55,9 +56,9 @@ return nil
 #### Tasks
 
 ```go
-group := wrtask.New()
+group := taskgroup.New()
 
-group.Add(wrtask.SignalHandler(context.TODO(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM))
+group.Add(taskgroup.SignalHandler(context.TODO(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM))
 log.Println("We're waiting for 5 seconds, giving you an opportunity to gracefully exit the program.")
 
 // Actor 1: performs a long operation
@@ -97,7 +98,6 @@ log.Println("Error in group:", err)
 | BenchmarkWrSyncGroup-8 | 5138682    | 3489         | 736           | 42                      |
 | BenchmarkConcGroup-8   | 4442769    | 3601         | 734           | 42                      |
 
-
 #### Pool
 
 - [pond](github.com/alitto/pond)
@@ -119,7 +119,7 @@ log.Println("Error in group:", err)
 
 - [run](https://github.com/oklog/run)
 
-| Benchmark           | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
-|---------------------|------------|--------------|---------------|-------------------------|
-| BenchmarkWrTasks-8  | 1218404    | 4518         | 1680          | 60                      |
-| BenchmarkRunTasks-8 | 1000000    | 5349         | 1560          | 58                      |
+| Benchmark              | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
+|------------------------|------------|--------------|---------------|-------------------------|
+| BenchmarkWrTaskGroup-8 | 1218404    | 4518         | 1680          | 60                      |
+| BenchmarkRunTasks-8    | 1000000    | 5349         | 1560          | 58                      |

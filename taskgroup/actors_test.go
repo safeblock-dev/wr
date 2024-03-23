@@ -1,4 +1,4 @@
-package wrtask_test
+package taskgroup_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/safeblock-dev/wr/wrtask"
+	"github.com/safeblock-dev/wr/taskgroup"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +14,7 @@ func TestContextHandler(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	execute, interrupt := wrtask.ContextHandler(ctx)
+	execute, interrupt := taskgroup.ContextHandler(ctx)
 
 	// Simulate context cancellation
 	cancel()
@@ -33,7 +33,7 @@ func TestSignalHandler(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		execute, _ := wrtask.SignalHandler(ctx, syscall.SIGTERM)
+		execute, _ := taskgroup.SignalHandler(ctx, syscall.SIGTERM)
 
 		// Simulate receiving a signal
 		go func() {
@@ -42,13 +42,13 @@ func TestSignalHandler(t *testing.T) {
 		}()
 
 		err := execute()
-		require.ErrorIs(t, err, wrtask.ErrSignal)
+		require.ErrorIs(t, err, taskgroup.ErrSignal)
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 
-		execute, _ := wrtask.SignalHandler(ctx, syscall.SIGTERM)
+		execute, _ := taskgroup.SignalHandler(ctx, syscall.SIGTERM)
 
 		// Cancel the context to trigger ctx.Done()
 		cancel()

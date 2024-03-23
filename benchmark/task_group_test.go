@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/oklog/run"
-	"github.com/safeblock-dev/wr/wrtask"
+	"github.com/safeblock-dev/wr/taskgroup"
 )
 
 const maxTasksGoroutines = 10
 
-func BenchmarkWrTasks(b *testing.B) {
+func BenchmarkWrTaskGroup(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		task := wrtask.New()
+		task := taskgroup.New()
 
 		for j := 0; j < maxTasksGoroutines; j++ {
 			task.Add(func() error {

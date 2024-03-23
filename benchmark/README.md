@@ -19,10 +19,10 @@
 
 ### Task
 
-| Benchmark           | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
-|---------------------|------------|--------------|---------------|-------------------------|
-| BenchmarkWrTasks-8  | 1218404    | 4518         | 1680          | 60                      |
-| BenchmarkRunTasks-8 | 1000000    | 5349         | 1560          | 58                      |
+| Benchmark              | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
+|------------------------|------------|--------------|---------------|-------------------------|
+| BenchmarkWrTaskGroup-8 | 1218404    | 4518         | 1680          | 60                      |
+| BenchmarkRunTasks-8    | 1000000    | 5349         | 1560          | 58                      |
 
 ```sh
 go test -bench=. -benchmem -benchtime=5s

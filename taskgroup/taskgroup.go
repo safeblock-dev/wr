@@ -1,4 +1,4 @@
-package wrtask
+package taskgroup
 
 import (
 	"context"

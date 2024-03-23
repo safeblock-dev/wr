@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/safeblock-dev/wr/wrtask"
+	"github.com/safeblock-dev/wr/taskgroup"
 )
 
 // result:
@@ -20,9 +20,9 @@ import (
 // 2024/03/21 04:06:13 Actor 1 stopped
 
 func main() {
-	group := wrtask.New()
+	group := taskgroup.New()
 
-	group.Add(wrtask.SignalHandler(context.TODO(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM))
+	group.Add(taskgroup.SignalHandler(context.TODO(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM))
 	log.Println("We're waiting for 5 seconds, giving you an opportunity to gracefully exit the program.")
 
 	// Actor 1: performs a long operation
