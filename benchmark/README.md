@@ -11,7 +11,7 @@
 
 | Benchmark                | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
 |--------------------------|------------|--------------|---------------|-------------------------|
-| BenchmarkWrPool-8        | 17103136   | 365.3        | 33            | 3                       |
+| BenchmarkWrGoPool-8      | 17103136   | 365.3        | 33            | 3                       |
 | BenchmarkConcErrorPool-8 | 17164700   | 397.1        | 66            | 4                       |
 | BenchmarkGopool-8        | 18526196   | 345.1        | 33            | 3                       |
 | BenchmarkAnts-8          | 17683563   | 337.2        | 40            | 3                       |

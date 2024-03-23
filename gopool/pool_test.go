@@ -1,4 +1,4 @@
-package wrpool_test
+package gopool_test
 
 import (
 	"errors"
@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/safeblock-dev/wr/gopool"
 	"github.com/safeblock-dev/wr/panics"
-	"github.com/safeblock-dev/wr/wrpool"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +19,7 @@ func TestPool_Go(t *testing.T) {
 		t.Parallel()
 
 		var counter atomic.Uint64
-		pool := wrpool.New()
+		pool := gopool.New()
 		numTasks := 10
 
 		for i := 0; i < numTasks; i++ {
@@ -44,7 +44,7 @@ func TestPool_Go(t *testing.T) {
 				t.Parallel()
 
 				// Create a new pool with the specified maximum number of concurrent goroutines.
-				g := wrpool.New(wrpool.MaxGoroutines(maxConcurrent))
+				g := gopool.New(gopool.MaxGoroutines(maxConcurrent))
 
 				var currentConcurrent atomic.Int64 // Tracks the current number of concurrent goroutines.
 				var errCount atomic.Int64          // Tracks the number of times the concurrency limit is exceeded.
@@ -84,7 +84,7 @@ func TestPool_MaxGoroutines(t *testing.T) {
 	t.Parallel()
 
 	const maxGoroutines = 5
-	pool := wrpool.New(wrpool.MaxGoroutines(maxGoroutines))
+	pool := gopool.New(gopool.MaxGoroutines(maxGoroutines))
 	defer pool.Wait()
 
 	require.Equal(t, maxGoroutines, pool.MaxGoroutines())
@@ -101,7 +101,7 @@ func TestErrorHandler(t *testing.T) {
 			errCounter.Add(1)
 		}
 
-		pool := wrpool.New(wrpool.ErrorHandler(errorHandler))
+		pool := gopool.New(gopool.ErrorHandler(errorHandler))
 		pool.Go(func() error {
 			return errors.New("test error")
 		})
@@ -118,7 +118,7 @@ func TestPool_Reset(t *testing.T) {
 	t.Run("should reset the pool", func(t *testing.T) {
 		t.Parallel()
 
-		pool := wrpool.New()
+		pool := gopool.New()
 		pool.Go(func() error {
 			time.Sleep(100 * time.Millisecond)
 
@@ -139,10 +139,10 @@ func TestPool_Errors(t *testing.T) {
 		t.Parallel()
 
 		errorHandled := false
-		errorHandler := wrpool.ErrorHandler(func(_ error) {
+		errorHandler := gopool.ErrorHandler(func(_ error) {
 			errorHandled = true
 		})
-		pool := wrpool.New(errorHandler)
+		pool := gopool.New(errorHandler)
 
 		pool.Go(func() error {
 			return errors.New("error")
@@ -161,10 +161,10 @@ func TestPool_Panics(t *testing.T) {
 		t.Parallel()
 
 		panicHandled := false
-		panicHandler := wrpool.PanicHandler(func(_ panics.Recovered) {
+		panicHandler := gopool.PanicHandler(func(_ panics.Recovered) {
 			panicHandled = true
 		})
-		pool := wrpool.New(panicHandler)
+		pool := gopool.New(panicHandler)
 
 		pool.Go(func() error {
 			panic("test panic")
@@ -182,7 +182,7 @@ func TestPool_DoubleWait(t *testing.T) {
 	t.Run("should not panic on double Wait", func(t *testing.T) {
 		t.Parallel()
 
-		pool := wrpool.New()
+		pool := gopool.New()
 
 		pool.Wait()
 		require.NotPanics(t, func() { pool.Wait() }, "Double Wait should not cause a panic")
@@ -195,7 +195,7 @@ func TestPool_GoAfterWait(t *testing.T) {
 	t.Run("should not execute Go after Wait", func(t *testing.T) {
 		t.Parallel()
 
-		pool := wrpool.New()
+		pool := gopool.New()
 
 		pool.Wait()
 

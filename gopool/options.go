@@ -1,4 +1,4 @@
-package wrpool
+package gopool
 
 import (
 	"context"

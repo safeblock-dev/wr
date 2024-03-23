@@ -1,4 +1,4 @@
-package wrpool
+package gopool
 
 // limiter is a simple channel-based limiter for controlling the number of goroutines.
 type limiter chan struct{}

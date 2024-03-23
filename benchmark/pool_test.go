@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/alitto/pond"
-	"github.com/devchat-ai/gopool"
+	devchatGopool "github.com/devchat-ai/gopool"
 	"github.com/panjf2000/ants/v2"
-	"github.com/safeblock-dev/wr/wrpool"
+	"github.com/safeblock-dev/wr/gopool"
 	concPool "github.com/sourcegraph/conc/pool"
 )
 
@@ -17,8 +17,8 @@ const (
 	maxPoolGoroutines = 30
 )
 
-func BenchmarkWrPool(b *testing.B) {
-	pool := wrpool.New(wrpool.MaxGoroutines(maxPoolGoroutines))
+func BenchmarkWrGoPool(b *testing.B) {
+	pool := gopool.New(gopool.MaxGoroutines(maxPoolGoroutines))
 	defer pool.Wait()
 
 	b.ResetTimer()
@@ -52,7 +52,7 @@ func BenchmarkConcErrorPool(b *testing.B) {
 }
 
 func BenchmarkGopool(b *testing.B) {
-	pool := gopool.NewGoPool(maxPoolGoroutines)
+	pool := devchatGopool.NewGoPool(maxPoolGoroutines)
 	defer pool.Release()
 	defer pool.Wait()
 

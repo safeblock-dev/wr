@@ -5,8 +5,8 @@ import (
 	"errors"
 	"log"
 
+	"github.com/safeblock-dev/wr/gopool"
 	"github.com/safeblock-dev/wr/panics"
-	"github.com/safeblock-dev/wr/wrpool"
 )
 
 const maxGoroutines = 2
@@ -25,11 +25,11 @@ func main() {
 
 func example(ctx context.Context) {
 	// Create a new worker pool with a context, maximum number of goroutines, and custom panic and error handlers.
-	pool := wrpool.New(
-		wrpool.Context(ctx),
-		wrpool.MaxGoroutines(maxGoroutines),
-		wrpool.PanicHandler(panicHandler),
-		wrpool.ErrorHandler(errorHandler),
+	pool := gopool.New(
+		gopool.Context(ctx),
+		gopool.MaxGoroutines(maxGoroutines),
+		gopool.PanicHandler(panicHandler),
+		gopool.ErrorHandler(errorHandler),
 	)
 	defer pool.Wait() // Ensure all tasks are completed before exiting.
 

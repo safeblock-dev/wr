@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/safeblock-dev/wr/panics"
-	"github.com/safeblock-dev/wr/wrgroup"
+	"github.com/safeblock-dev/wr/syncgroup"
 )
 
 // result:
@@ -15,12 +15,12 @@ import (
 
 func main() {
 	// Create a custom panic handler that logs the panic value.
-	panicHandler := wrgroup.PanicHandler(func(recovered panics.Recovered) {
+	panicHandler := syncgroup.PanicHandler(func(recovered panics.Recovered) {
 		log.Println("panic:", recovered.Value)
 	})
 
 	// Create a new WaitGroup with the custom panic handler.
-	wg := wrgroup.New(panicHandler)
+	wg := syncgroup.New(panicHandler)
 
 	// Run a function in a new goroutine that logs a message.
 	wg.Go(func() {

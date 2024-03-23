@@ -1,6 +1,6 @@
-### wrpool
+### gopool
 
-The **wrpool** package provides a flexible and efficient worker pool for managing and executing concurrent tasks in Go. It offers features such as dynamic worker scaling, task queuing, context support for cancellation and deadlines, error handling, and panic recovery. This package is designed to simplify concurrency management and improve resource utilization in Go applications.
+The **gopool** package provides a flexible and efficient worker pool for managing and executing concurrent tasks in Go. It offers features such as dynamic worker scaling, task queuing, context support for cancellation and deadlines, error handling, and panic recovery. This package is designed to simplify concurrency management and improve resource utilization in Go applications.
 
 - **Concurrent Task Execution:** Manages a pool of goroutines to execute tasks concurrently.
 - **Task Queuing:** Supports queuing tasks when all workers are busy.

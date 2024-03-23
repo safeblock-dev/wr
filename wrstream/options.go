@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
+	"github.com/safeblock-dev/wr/gopool"
 	"github.com/safeblock-dev/wr/panics"
-	"github.com/safeblock-dev/wr/wrpool"
 )
 
 // Constants for the default capacity of options slices.
@@ -39,13 +39,13 @@ func ErrorHandler(errorHandler func(err error)) Option {
 func Context(ctx context.Context) Option {
 	return func(stream *Stream) {
 		stream.context, stream.contextCancel = context.WithCancel(ctx)
-		stream.workerPoolOpts = append(stream.workerPoolOpts, wrpool.Context(ctx))
+		stream.workerPoolOpts = append(stream.workerPoolOpts, gopool.Context(ctx))
 	}
 }
 
 // MaxGoroutines sets the maximum number of goroutines allowed in the worker pool.
 func MaxGoroutines(limit int) Option {
 	return func(stream *Stream) {
-		stream.workerPoolOpts = append(stream.workerPoolOpts, wrpool.MaxGoroutines(limit))
+		stream.workerPoolOpts = append(stream.workerPoolOpts, gopool.MaxGoroutines(limit))
 	}
 }

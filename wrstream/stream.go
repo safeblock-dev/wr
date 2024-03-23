@@ -5,9 +5,9 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/safeblock-dev/wr/gopool"
 	"github.com/safeblock-dev/wr/panics"
 	"github.com/safeblock-dev/wr/wrgroup"
-	"github.com/safeblock-dev/wr/wrpool"
 )
 
 // Stream manages the execution of tasks and their corresponding callbacks.
@@ -17,9 +17,9 @@ type Stream struct {
 	panicHandler    func(recovered panics.Recovered)
 	errorHandler    func(err error) // Handler for errors occurring during task execution.
 	contextCancel   context.CancelFunc
-	workerPoolOpts  []wrpool.Option
+	workerPoolOpts  []gopool.Option
 	callbackGroup   wrgroup.WaitGroup
-	workerPool      wrpool.Pool
+	workerPool      gopool.Pool
 	initOnce        sync.Once
 	stopped         atomic.Bool
 }
@@ -34,7 +34,7 @@ type Callback func() error
 func New(options ...Option) *Stream {
 	stream := &Stream{
 		panicHandler:   DefaultPanicHandler,
-		workerPoolOpts: make([]wrpool.Option, 0, workerPoolOptsCount),
+		workerPoolOpts: make([]gopool.Option, 0, workerPoolOptsCount),
 		callbackGroup:  *wrgroup.New(),
 	}
 
@@ -48,7 +48,7 @@ func New(options ...Option) *Stream {
 		Context(context.Background())(stream)
 	}
 
-	stream.workerPool = *wrpool.New(stream.workerPoolOpts...)
+	stream.workerPool = *gopool.New(stream.workerPoolOpts...)
 	stream.callbackQueueCh = make(chan callbackChannel, stream.workerPool.MaxGoroutines())
 
 	return stream

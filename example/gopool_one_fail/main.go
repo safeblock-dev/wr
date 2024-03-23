@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/safeblock-dev/wr/wrpool"
+	"github.com/safeblock-dev/wr/gopool"
 )
 
 const (
@@ -27,10 +27,10 @@ func main() {
 	defer cancel()                                          // Ensure the context is cancelled when the function exits.
 
 	// Create a new worker pool with a context, maximum number of goroutines, and custom panic and error handlers.
-	pool := wrpool.New(
-		wrpool.Context(ctx),
-		wrpool.MaxGoroutines(maxGoroutines),
-		wrpool.ErrorHandler(func(err error) {
+	pool := gopool.New(
+		gopool.Context(ctx),
+		gopool.MaxGoroutines(maxGoroutines),
+		gopool.ErrorHandler(func(err error) {
 			log.Printf("error: %v", err)
 			cancel()
 		}),
