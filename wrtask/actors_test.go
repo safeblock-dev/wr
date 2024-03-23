@@ -29,20 +29,31 @@ func TestContextHandler(t *testing.T) {
 func TestSignalHandler(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	t.Run("signal received", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 
-	execute, interrupt := wrtask.SignalHandler(ctx, syscall.SIGTERM)
+		execute, _ := wrtask.SignalHandler(ctx, syscall.SIGTERM)
 
-	// Simulate receiving a signal
-	go func() {
-		time.Sleep(time.Millisecond * 100) // Ensure execute() is running
-		_ = syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-	}()
+		// Simulate receiving a signal
+		go func() {
+			time.Sleep(time.Millisecond * 100) // Ensure execute() is running
+			_ = syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+		}()
 
-	err := execute()
-	require.ErrorIs(t, err, wrtask.ErrSignal)
+		err := execute()
+		require.ErrorIs(t, err, wrtask.ErrSignal)
+	})
 
-	// Interrupt should not cause any error
-	interrupt(nil)
+	t.Run("context cancelled", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+
+		execute, _ := wrtask.SignalHandler(ctx, syscall.SIGTERM)
+
+		// Cancel the context to trigger ctx.Done()
+		cancel()
+
+		err := execute()
+		require.ErrorIs(t, err, context.Canceled)
+	})
 }

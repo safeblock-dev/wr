@@ -2,6 +2,7 @@ package wrpool_test
 
 import (
 	"errors"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -11,10 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPool_Go_Wait(t *testing.T) {
+func TestPool_Go(t *testing.T) {
 	t.Parallel()
 
-	t.Run("should execute tasks", func(t *testing.T) {
+	t.Run("base", func(t *testing.T) {
 		t.Parallel()
 
 		var counter atomic.Uint64
@@ -33,6 +34,64 @@ func TestPool_Go_Wait(t *testing.T) {
 
 		require.Equal(t, uint64(numTasks), counter.Load(), "All tasks should be executed")
 	})
+
+	t.Run("with max goroutines", func(t *testing.T) {
+		t.Parallel()
+
+		// Test different values for maximum concurrent goroutines.
+		for _, maxConcurrent := range []int{1, 10, 100} {
+			t.Run(strconv.Itoa(maxConcurrent), func(t *testing.T) {
+				t.Parallel()
+
+				// Create a new pool with the specified maximum number of concurrent goroutines.
+				g := wrpool.New(wrpool.MaxGoroutines(maxConcurrent))
+
+				var currentConcurrent atomic.Int64 // Tracks the current number of concurrent goroutines.
+				var errCount atomic.Int64          // Tracks the number of times the concurrency limit is exceeded.
+
+				taskCount := maxConcurrent * 10 // Total number of tasks to submit.
+
+				for i := 0; i < taskCount; i++ {
+					g.Go(func() error {
+						cur := currentConcurrent.Add(1) // Increment the concurrent counter.
+
+						// Check if the concurrency limit is exceeded.
+						if cur > int64(maxConcurrent) {
+							errCount.Add(1) // Increment the error count.
+						}
+
+						time.Sleep(time.Millisecond) // Simulate some work.
+
+						currentConcurrent.Add(-1) // Decrement the concurrent counter.
+
+						return nil
+					})
+				}
+
+				g.Wait() // Wait for all tasks to complete.
+
+				// Verify that the concurrency limit was never exceeded.
+				require.Equal(t, int64(0), errCount.Load())
+
+				// Verify that all goroutines have completed.
+				require.Equal(t, int64(0), currentConcurrent.Load())
+			})
+		}
+	})
+}
+
+func TestPool_MaxGoroutines(t *testing.T) {
+	t.Parallel()
+
+	const maxGoroutines = 5
+	pool := wrpool.New(wrpool.MaxGoroutines(maxGoroutines))
+	defer pool.Wait()
+
+	require.Equal(t, maxGoroutines, pool.MaxGoroutines())
+}
+
+func TestErrorHandler(t *testing.T) {
+	t.Parallel()
 
 	t.Run("should handle errors", func(t *testing.T) {
 		t.Parallel()

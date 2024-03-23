@@ -7,30 +7,31 @@ import (
 	"github.com/safeblock-dev/wr/wrgroup"
 )
 
-// Option represents an option that can be passed when instantiating a worker pool to customize it.
+// Option represents an option that can be passed when instantiating a Pool to customize it.
 type Option func(pool *Pool)
 
-// PanicHandler allows to change the panic handler function of a pool.
+// PanicHandler sets the panic handler function for the pool.
 func PanicHandler(panicHandler func(recovered panics.Recovered)) Option {
 	return func(pool *Pool) {
-		pool.handleOptions = append(pool.handleOptions, wrgroup.PanicHandler(panicHandler))
+		pool.groupOpts = append(pool.groupOpts, wrgroup.PanicHandler(panicHandler))
 	}
 }
 
-// ErrorHandler allows to change the error handler function of a pool.
+// ErrorHandler sets the error handler function for the pool.
 func ErrorHandler(errorHandler func(err error)) Option {
 	return func(pool *Pool) {
 		pool.errorHandler = errorHandler
 	}
 }
 
-// Context configures a parent context on a worker pool to stop all workers when it is cancelled.
-func Context(parentCtx context.Context) Option {
+// Context sets a parent context for the pool to stop all workers when it is cancelled.
+func Context(ctx context.Context) Option {
 	return func(pool *Pool) {
-		pool.context, pool.contextCancel = context.WithCancel(parentCtx)
+		pool.ctx, pool.cancelFunc = context.WithCancel(ctx)
 	}
 }
 
+// MaxGoroutines sets the maximum number of goroutines allowed in the pool.
 func MaxGoroutines(limit int) Option {
 	return func(pool *Pool) {
 		pool.limiter = make(limiter, limit)

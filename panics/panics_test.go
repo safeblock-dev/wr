@@ -2,6 +2,7 @@ package panics_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/safeblock-dev/wr/panics"
@@ -55,4 +56,41 @@ func TestRecovered_AsError(t *testing.T) {
 		unwrappedErr := errors.Unwrap(err)
 		require.ErrorIs(t, unwrappedErr, originalErr)
 	})
+}
+
+func TestRecoveredError_Error(t *testing.T) {
+	t.Parallel()
+
+	// Simulate a panic with a string value.
+	recovered := panics.NewRecovered(0, "test panic")
+	recoveredErr := recovered.AsError().(*panics.RecoveredError)
+
+	// Check that the Error method returns the expected string.
+	expectedErrMsg := fmt.Sprintf("panic: %v\nstacktrace:\n%s\n", recovered.Value, recovered.Stack)
+	require.Equal(t, expectedErrMsg, recoveredErr.Error(), "Error message should match the recovered panic information")
+}
+
+func TestRecoveredError_Unwrap(t *testing.T) {
+	t.Parallel()
+
+	// Simulate a panic with an error value.
+	originalErr := errors.New("original error")
+	recovered := panics.NewRecovered(0, originalErr)
+	recoveredErr := recovered.AsError().(*panics.RecoveredError)
+
+	// Check that the Unwrap method returns the original error.
+	unwrappedErr := errors.Unwrap(recoveredErr)
+	require.Equal(t, originalErr, unwrappedErr, "Unwrap should return the original error")
+}
+
+func TestRecoveredError_Unwrap_NonError(t *testing.T) {
+	t.Parallel()
+
+	// Simulate a panic with a non-error value.
+	recovered := panics.NewRecovered(0, "test panic")
+	recoveredErr := recovered.AsError().(*panics.RecoveredError)
+
+	// Check that the Unwrap method returns nil for non-error values.
+	unwrappedErr := errors.Unwrap(recoveredErr)
+	require.Nil(t, unwrappedErr, "Unwrap should return nil for non-error panic values")
 }

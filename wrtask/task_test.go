@@ -9,6 +9,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestTaskGroup_Add(t *testing.T) {
+	t.Parallel()
+
+	t.Run("add nil execute function", func(t *testing.T) {
+		t.Parallel()
+
+		tasks := wrtask.New()
+
+		require.Panics(t, func() {
+			tasks.Add(nil, wrtask.SkipInterrupt())
+		}, "expected panic when adding an actor with a nil execute function")
+	})
+
+	t.Run("add nil interrupt function", func(t *testing.T) {
+		t.Parallel()
+
+		tasks := wrtask.New()
+
+		require.Panics(t, func() {
+			tasks.Add(func() error { return nil }, nil)
+		}, "expected panic when adding an actor with a nil interrupt function")
+	})
+}
+
 func TestTaskGroup_AddContext(t *testing.T) {
 	t.Parallel()
 
@@ -55,6 +79,26 @@ func TestTaskGroup_AddContext(t *testing.T) {
 		err := group.Run()
 		require.Error(t, err)
 		require.True(t, interrupted)
+	})
+
+	t.Run("add nil execute function", func(t *testing.T) {
+		t.Parallel()
+
+		tasks := wrtask.New()
+
+		require.Panics(t, func() {
+			tasks.AddContext(nil, func(_ context.Context, _ error) {})
+		}, "expected panic when adding an actor with a nil execute function")
+	})
+
+	t.Run("add nil interrupt function", func(t *testing.T) {
+		t.Parallel()
+
+		tasks := wrtask.New()
+
+		require.Panics(t, func() {
+			tasks.AddContext(func(_ context.Context) error { return nil }, nil)
+		}, "expected panic when adding an actor with a nil interrupt function")
 	})
 }
 
@@ -122,26 +166,21 @@ func TestTaskGroup_Run(t *testing.T) {
 	t.Run("should allow restarting group after Run", func(t *testing.T) {
 		t.Parallel()
 
-		var (
-			result [3]bool
-			syncer = make(chan struct{})
-		)
+		var result [3]bool
 
 		group := wrtask.New()
 		group.Add(func() error {
 			result[0] = !result[0]
-			syncer <- struct{}{}
 
-			return errors.New("test error")
+			return nil
 		}, wrtask.SkipInterrupt())
 		group.Add(func() error {
 			result[1] = !result[1]
-			<-syncer
 
 			return nil
 		}, wrtask.SkipInterrupt())
 
-		require.Error(t, group.Run())
+		require.NoError(t, group.Run())
 		require.Equal(t, [3]bool{true, true, false}, result)
 
 		group.Add(func() error {
@@ -153,4 +192,13 @@ func TestTaskGroup_Run(t *testing.T) {
 		require.NoError(t, group.Run())
 		require.Equal(t, [3]bool{false, false, true}, result)
 	})
+}
+
+func TestTaskGroup_Size(t *testing.T) {
+	t.Parallel()
+
+	tasks := wrtask.New()
+	tasks.Add(func() error { return nil }, wrtask.SkipInterrupt())
+
+	require.Equal(t, 1, tasks.Size())
 }

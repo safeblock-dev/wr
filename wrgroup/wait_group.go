@@ -15,7 +15,7 @@ type WaitGroup struct {
 // New creates a new WaitGroup with the provided options.
 func New(options ...Option) *WaitGroup {
 	wg := &WaitGroup{
-		panicHandler: defaultPanicHandler,
+		panicHandler: DefaultPanicHandler,
 		wg:           sync.WaitGroup{},
 	}
 
@@ -33,8 +33,8 @@ func (wg *WaitGroup) Go(f func()) {
 	go func() {
 		defer wg.wg.Done()
 		defer func() {
-			if p := recover(); p != nil {
-				wg.panicHandler(panics.NewRecovered(1, p))
+			if r := recover(); r != nil {
+				wg.panicHandler(panics.NewRecovered(1, r))
 			}
 		}()
 

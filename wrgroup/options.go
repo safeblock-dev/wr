@@ -9,8 +9,8 @@ import (
 // Option represents an option that can be passed when instantiating a WaitGroup to customize it.
 type Option func(wg *WaitGroup)
 
-// defaultPanicHandler is the default panic handler that prints the panic information.
-func defaultPanicHandler(recovered panics.Recovered) {
+// DefaultPanicHandler is the default panic handler that prints the panic information.
+func DefaultPanicHandler(recovered panics.Recovered) {
 	log.Println(recovered.String())
 }
 

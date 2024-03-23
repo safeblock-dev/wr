@@ -4,3 +4,5 @@
 
 # MacOS
 .DS_Store
+
+coverage.txt

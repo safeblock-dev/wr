@@ -102,6 +102,10 @@ func (g *TaskGroup) Run() error {
 	return err
 }
 
+func (g *TaskGroup) Size() int {
+	return len(g.actors)
+}
+
 func SkipInterrupt() func(error) {
 	return func(error) {}
 }
