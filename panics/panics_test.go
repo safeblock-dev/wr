@@ -63,7 +63,9 @@ func TestRecoveredError_Error(t *testing.T) {
 
 	// Simulate a panic with a string value.
 	recovered := panics.NewRecovered(0, "test panic")
-	recoveredErr := recovered.AsError().(*panics.RecoveredError)
+	var recoveredErr *panics.RecoveredError
+
+	require.ErrorAs(t, recovered.AsError(), &recoveredErr)
 
 	// Check that the Error method returns the expected string.
 	expectedErrMsg := fmt.Sprintf("panic: %v\nstacktrace:\n%s\n", recovered.Value, recovered.Stack)
@@ -76,7 +78,8 @@ func TestRecoveredError_Unwrap(t *testing.T) {
 	// Simulate a panic with an error value.
 	originalErr := errors.New("original error")
 	recovered := panics.NewRecovered(0, originalErr)
-	recoveredErr := recovered.AsError().(*panics.RecoveredError)
+	var recoveredErr *panics.RecoveredError
+	require.ErrorAs(t, recovered.AsError(), &recoveredErr)
 
 	// Check that the Unwrap method returns the original error.
 	unwrappedErr := errors.Unwrap(recoveredErr)
@@ -88,9 +91,11 @@ func TestRecoveredError_Unwrap_NonError(t *testing.T) {
 
 	// Simulate a panic with a non-error value.
 	recovered := panics.NewRecovered(0, "test panic")
-	recoveredErr := recovered.AsError().(*panics.RecoveredError)
+	var recoveredErr *panics.RecoveredError
+
+	require.ErrorAs(t, recovered.AsError(), &recoveredErr)
 
 	// Check that the Unwrap method returns nil for non-error values.
 	unwrappedErr := errors.Unwrap(recoveredErr)
-	require.Nil(t, unwrappedErr, "Unwrap should return nil for non-error panic values")
+	require.NoError(t, unwrappedErr, "Unwrap should return nil for non-error panic values")
 }

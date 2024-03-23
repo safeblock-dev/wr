@@ -49,6 +49,8 @@ func TestPanicHandler(t *testing.T) {
 }
 
 func TestDefaultPanicHandler(t *testing.T) {
+	t.Parallel()
+
 	// Set up a buffer to capture log output.
 	var logBuffer bytes.Buffer
 	log.SetOutput(&logBuffer)

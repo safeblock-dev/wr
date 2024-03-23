@@ -30,6 +30,8 @@ func TestSignalHandler(t *testing.T) {
 	t.Parallel()
 
 	t.Run("signal received", func(t *testing.T) {
+		t.Parallel()
+
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
@@ -46,8 +48,9 @@ func TestSignalHandler(t *testing.T) {
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
+		t.Parallel()
 
+		ctx, cancel := context.WithCancel(context.Background())
 		execute, _ := taskgroup.SignalHandler(ctx, syscall.SIGTERM)
 
 		// Cancel the context to trigger ctx.Done()

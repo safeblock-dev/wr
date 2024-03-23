@@ -17,6 +17,8 @@ func TestStream_Go(t *testing.T) {
 	t.Parallel()
 
 	t.Run("base", func(t *testing.T) {
+		t.Parallel()
+
 		stream := gostream.New()
 		var workerPoolCounter, callbackCounter atomic.Int64
 		for i := 0; i < 10; i++ {
@@ -38,6 +40,8 @@ func TestStream_Go(t *testing.T) {
 	})
 
 	t.Run("consistency is maintained", func(t *testing.T) {
+		t.Parallel()
+
 		syncer := make(chan struct{})
 		counter := atomic.Int64{}
 
@@ -74,6 +78,8 @@ func TestStream_Go(t *testing.T) {
 	})
 
 	t.Run("starting after Wait", func(t *testing.T) {
+		t.Parallel()
+
 		stream := gostream.New()
 		stream.Wait()
 
@@ -114,7 +120,7 @@ func TestStream_ContextCancellation(t *testing.T) {
 		}
 		stream.Wait()
 
-		require.True(t, callbackCounter.Load() <= 5)
+		require.LessOrEqual(t, callbackCounter.Load(), int64(5))
 	})
 
 	t.Run("callback cancel", func(t *testing.T) {
@@ -282,6 +288,7 @@ func TestStream_Wait(t *testing.T) {
 	var callbackExecuted atomic.Bool
 	stream.Go(func() (gostream.Callback, error) {
 		callbackExecuted.Store(true)
+
 		return nil, nil
 	})
 
@@ -336,6 +343,8 @@ func TestStream_CallbackNilFunction(t *testing.T) {
 }
 
 func TestDefaultPanicHandler(t *testing.T) {
+	t.Parallel()
+
 	// Set up a buffer to capture log output.
 	var logBuffer bytes.Buffer
 	log.SetOutput(&logBuffer)

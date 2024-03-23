@@ -17,7 +17,7 @@ type callbackData struct {
 type callbackChannel chan callbackData
 
 // callbackChPool is a pool of callbackChannels to reduce allocations.
-var callbackChPool = sync.Pool{
+var callbackChPool = sync.Pool{ //nolint:gochecknoglobals // optimization
 	New: func() any {
 		return make(callbackChannel, 1) // Buffer size of 1 to prevent blocking.
 	},

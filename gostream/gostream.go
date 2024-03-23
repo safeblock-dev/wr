@@ -32,7 +32,7 @@ type Callback func() error
 
 // New creates a new Stream with the provided options.
 func New(options ...Option) *Stream {
-	stream := &Stream{
+	stream := &Stream{ //nolint:exhaustruct // optimization
 		panicHandler:   DefaultPanicHandler,
 		workerPoolOpts: make([]gopool.Option, 0, workerPoolOptsCount),
 		callbackGroup:  *syncgroup.New(),

@@ -21,7 +21,7 @@ type Pool struct {
 
 // New creates a new Pool with the provided options.
 func New(options ...Option) *Pool {
-	pool := &Pool{
+	pool := &Pool{ //nolint:exhaustruct // optimization
 		groupOpts: make([]syncgroup.Option, 0, 1),
 		tasks:     make(chan func() error),
 	}
