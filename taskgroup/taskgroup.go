@@ -17,9 +17,14 @@ type TaskGroup struct {
 // actor represents a task with an execute function and an interrupt function.
 // The interrupt function is called to preemptively stop the execution.
 type actor struct {
-	execute   func() error
-	interrupt func(error)
+	execute   ExecuteFn
+	interrupt InterruptFn
 }
+
+type ExecuteFn func() error
+type ExecuteCtxFn func(ctx context.Context) error
+type InterruptFn func(err error)
+type InterruptCtxFn func(ctx context.Context, err error)
 
 // New creates a new, empty TaskGroup.
 func New() TaskGroup {
@@ -32,7 +37,7 @@ func New() TaskGroup {
 // The execute function is the task's main logic, and the interrupt function is called
 // to stop the task. The interrupt function should cause the execute function to return quickly.
 // The error returned by the first task to complete is passed to all interrupt functions and returned by Run.
-func (g *TaskGroup) Add(execute func() error, interrupt func(error)) {
+func (g *TaskGroup) Add(execute ExecuteFn, interrupt InterruptFn) {
 	if execute == nil || interrupt == nil {
 		panic("execute and interrupt functions must not be nil")
 	}
@@ -45,7 +50,7 @@ func (g *TaskGroup) Add(execute func() error, interrupt func(error)) {
 // particularly its cancellation signal. The 'interrupt' function is called when the task
 // needs to be preemptively stopped, which should cause 'execute' to return quickly.
 // The 'interrupt' function is also provided with the context and the error that caused the interruption.
-func (g *TaskGroup) AddContext(execute func(ctx context.Context) error, interrupt func(context.Context, error)) {
+func (g *TaskGroup) AddContext(execute ExecuteCtxFn, interrupt InterruptCtxFn) {
 	if execute == nil || interrupt == nil {
 		panic("execute and interrupt functions must not be nil")
 	}
@@ -106,6 +111,6 @@ func (g *TaskGroup) Size() int {
 	return len(g.actors)
 }
 
-func SkipInterrupt() func(error) {
+func SkipInterrupt() InterruptFn {
 	return func(error) {}
 }
