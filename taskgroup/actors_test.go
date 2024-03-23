@@ -10,22 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestContextHandler(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	execute, interrupt := taskgroup.ContextHandler(ctx)
-
-	// Simulate context cancellation
-	cancel()
-
-	err := execute()
-	require.ErrorIs(t, err, context.Canceled)
-
-	// Interrupt should not cause any error
-	interrupt(nil)
-}
-
 func TestSignalHandler(t *testing.T) {
 	t.Parallel()
 
@@ -55,6 +39,18 @@ func TestSignalHandler(t *testing.T) {
 
 		// Cancel the context to trigger ctx.Done()
 		cancel()
+
+		err := execute()
+		require.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("interrupt cancelled", func(t *testing.T) {
+		t.Parallel()
+
+		execute, interrupt := taskgroup.SignalHandler(context.Background(), syscall.SIGTERM)
+
+		// Cancel the interrupt context
+		interrupt(nil)
 
 		err := execute()
 		require.ErrorIs(t, err, context.Canceled)
