@@ -38,7 +38,7 @@ func ErrorHandler(errorHandler func(err error)) Option {
 // Context sets a parent context for the stream to stop all workers when it is cancelled.
 func Context(ctx context.Context) Option {
 	return func(stream *Stream) {
-		stream.context, stream.contextCancel = context.WithCancel(ctx)
+		stream.ctx = ctx
 		stream.workerPoolOpts = append(stream.workerPoolOpts, gopool.Context(ctx))
 	}
 }

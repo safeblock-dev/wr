@@ -12,11 +12,10 @@ import (
 
 // Stream manages the execution of tasks and their corresponding callbacks.
 type Stream struct {
-	context         context.Context
+	ctx             context.Context
 	callbackQueueCh chan callbackChannel
 	panicHandler    func(recovered panics.Recovered)
 	errorHandler    func(err error) // Handler for errors occurring during task execution.
-	contextCancel   context.CancelFunc
 	workerPoolOpts  []gopool.Option
 	callbackGroup   syncgroup.WaitGroup
 	workerPool      gopool.Pool
@@ -44,7 +43,7 @@ func New(options ...Option) *Stream {
 	}
 
 	// Initialize base context (if not already set).
-	if stream.context == nil {
+	if stream.ctx == nil {
 		Context(context.Background())(stream)
 	}
 
@@ -127,7 +126,7 @@ func (s *Stream) callbackHandler(data callbackData) {
 	case data.err != nil:
 		s.errorHandler(data.err)
 	}
-	if s.context.Err() != nil {
+	if s.ctx.Err() != nil {
 		return
 	}
 
