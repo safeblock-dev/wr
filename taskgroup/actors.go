@@ -9,17 +9,6 @@ import (
 
 var ErrSignal = errors.New("signal error")
 
-// ContextHandler creates an actor that terminates when the provided context is canceled.
-func ContextHandler(ctx context.Context) (ExecuteFn, InterruptFn) {
-	execute := func() error {
-		<-ctx.Done()
-
-		return ctx.Err()
-	}
-
-	return execute, SkipInterrupt()
-}
-
 // SignalHandler creates an actor that terminates when a signal is received or the context is canceled.
 func SignalHandler(ctx context.Context, signals ...os.Signal) (ExecuteFn, InterruptFn) {
 	execute := func() error {
