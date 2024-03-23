@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/safeblock-dev/wr/gostream"
 	"github.com/safeblock-dev/wr/panics"
-	"github.com/safeblock-dev/wr/wrstream"
 )
 
 const maxGoroutines = 3
@@ -23,16 +23,16 @@ func main() {
 
 func example(ctx context.Context) {
 	// Create a new worker pool with a context, maximum number of goroutines, and custom panic and error handlers.
-	stream := wrstream.New(
-		wrstream.Context(ctx),
-		wrstream.MaxGoroutines(maxGoroutines),
-		wrstream.PanicHandler(panicHandler),
-		wrstream.ErrorHandler(errorHandler),
+	stream := gostream.New(
+		gostream.Context(ctx),
+		gostream.MaxGoroutines(maxGoroutines),
+		gostream.PanicHandler(panicHandler),
+		gostream.ErrorHandler(errorHandler),
 	)
 	defer stream.Wait() // Ensure all tasks are completed before exiting.
 
 	for i := 0; i < 100; i++ {
-		stream.Go(func() (wrstream.Callback, error) {
+		stream.Go(func() (gostream.Callback, error) {
 			time.Sleep(time.Duration(rand.Uint32()) / 2)
 
 			switch {

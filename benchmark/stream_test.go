@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/safeblock-dev/wr/wrstream"
+	"github.com/safeblock-dev/wr/gostream"
 	concStream "github.com/sourcegraph/conc/stream"
 )
 
@@ -12,13 +12,13 @@ const (
 	maxStreamGoroutines = 30
 )
 
-func BenchmarkWrStream(b *testing.B) {
-	stream := wrstream.New(wrstream.MaxGoroutines(maxStreamGoroutines))
+func BenchmarkWrGoStream(b *testing.B) {
+	stream := gostream.New(gostream.MaxGoroutines(maxStreamGoroutines))
 	defer stream.Wait()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		stream.Go(func() (wrstream.Callback, error) {
+		stream.Go(func() (gostream.Callback, error) {
 			msg := fmt.Sprintf("%d", i)
 
 			return func() error {

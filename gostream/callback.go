@@ -1,4 +1,4 @@
-package wrstream
+package gostream
 
 import (
 	"sync"
