@@ -21,4 +21,4 @@ test: ## Run tests
 
 .PHONY: bench
 bench: ## Run benchmarks. See https://pkg.go.dev/cmd/go#hdr-Testing_flags
-	go test ./... -bench . -benchtime 5s -timeout 0 -run=XXX -cpu 1 -benchmem
+	cd benchmark && go test ./... -bench . -benchtime 5s -timeout 0 -run=XXX -cpu 1 -benchmem

@@ -1,4 +1,4 @@
-package benchmark_test
+package gopool_test
 
 import (
 	"errors"
@@ -14,11 +14,35 @@ import (
 )
 
 const (
-	maxPoolGoroutines = 30
+	maxGoroutines = 30
 )
 
-func BenchmarkWrGoPool(b *testing.B) {
-	pool := gopool.New(gopool.MaxGoroutines(maxPoolGoroutines))
+func BenchmarkDefault(b *testing.B) {
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	goroutineLimit := make(chan struct{}, maxGoroutines)
+	errorHandler := func(_ error) {}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		goroutineLimit <- struct{}{}
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+
+			msg := fmt.Sprintf("%d", i)
+			if i%10 == 0 {
+				errorHandler(errors.New(msg))
+			}
+
+			<-goroutineLimit
+		}(i)
+	}
+}
+
+func BenchmarkWr(b *testing.B) {
+	pool := gopool.New(gopool.MaxGoroutines(maxGoroutines))
 	defer pool.Wait()
 
 	b.ResetTimer()
@@ -34,8 +58,8 @@ func BenchmarkWrGoPool(b *testing.B) {
 	}
 }
 
-func BenchmarkConcErrorPool(b *testing.B) {
-	pool := concPool.New().WithMaxGoroutines(maxPoolGoroutines).WithErrors()
+func BenchmarkConc(b *testing.B) {
+	pool := concPool.New().WithMaxGoroutines(maxGoroutines).WithErrors()
 	defer pool.Wait()
 
 	b.ResetTimer()
@@ -52,7 +76,7 @@ func BenchmarkConcErrorPool(b *testing.B) {
 }
 
 func BenchmarkGopool(b *testing.B) {
-	pool := devchatGopool.NewGoPool(maxPoolGoroutines)
+	pool := devchatGopool.NewGoPool(maxGoroutines)
 	defer pool.Release()
 	defer pool.Wait()
 
@@ -71,7 +95,7 @@ func BenchmarkGopool(b *testing.B) {
 
 func BenchmarkAnts(b *testing.B) {
 	var wg sync.WaitGroup
-	p, _ := ants.NewPool(maxPoolGoroutines)
+	p, _ := ants.NewPool(maxGoroutines)
 	defer p.Release()
 	defer wg.Wait()
 
@@ -90,7 +114,7 @@ func BenchmarkAnts(b *testing.B) {
 }
 
 func BenchmarkPond(b *testing.B) {
-	pool := pond.New(maxPoolGoroutines, 0, pond.MinWorkers(maxPoolGoroutines))
+	pool := pond.New(maxGoroutines, 0, pond.MinWorkers(maxGoroutines))
 	defer pool.StopAndWait()
 
 	b.ResetTimer()

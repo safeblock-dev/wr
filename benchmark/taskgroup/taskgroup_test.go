@@ -1,4 +1,4 @@
-package benchmark_test
+package taskgroup_test
 
 import (
 	"fmt"
@@ -8,13 +8,13 @@ import (
 	"github.com/safeblock-dev/wr/taskgroup"
 )
 
-const maxTasksGoroutines = 10
+const maxGoroutines = 10
 
-func BenchmarkWrTaskGroup(b *testing.B) {
+func BenchmarkWr(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		task := taskgroup.New()
 
-		for j := 0; j < maxTasksGoroutines; j++ {
+		for j := 0; j < maxGoroutines; j++ {
 			task.Add(func() error {
 				_ = fmt.Sprintf("%d", i)
 
@@ -28,11 +28,11 @@ func BenchmarkWrTaskGroup(b *testing.B) {
 	}
 }
 
-func BenchmarkRunTasks(b *testing.B) {
+func BenchmarkRun(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		task := run.Group{}
 
-		for j := 0; j < maxTasksGoroutines; j++ {
+		for j := 0; j < maxGoroutines; j++ {
 			task.Add(func() error {
 				_ = fmt.Sprintf("%d", i)
 

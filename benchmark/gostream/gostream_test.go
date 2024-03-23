@@ -1,4 +1,4 @@
-package benchmark_test
+package gostream_test
 
 import (
 	"fmt"
@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	maxStreamGoroutines = 30
+	maxGoroutines = 30
 )
 
-func BenchmarkWrGoStream(b *testing.B) {
-	stream := gostream.New(gostream.MaxGoroutines(maxStreamGoroutines))
+func BenchmarkWr(b *testing.B) {
+	stream := gostream.New(gostream.MaxGoroutines(maxGoroutines))
 	defer stream.Wait()
 
 	b.ResetTimer()
@@ -30,8 +30,8 @@ func BenchmarkWrGoStream(b *testing.B) {
 	}
 }
 
-func BenchmarkConcStream(b *testing.B) {
-	stream := concStream.New().WithMaxGoroutines(maxPoolGoroutines)
+func BenchmarkConc(b *testing.B) {
+	stream := concStream.New().WithMaxGoroutines(maxGoroutines)
 	defer stream.Wait()
 
 	b.ResetTimer()

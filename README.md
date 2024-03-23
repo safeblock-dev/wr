@@ -1,15 +1,17 @@
 # WR
 
-`wr` is a Go library that provides convenient wrappers and utilities for concurrent programming, including a
-custom `WaitGroup` implementation with panic handling and a flexible worker pool.
+### GoPool
 
-## Features
+**gopool** is a Go library that provides a goroutine pool for efficient task execution. It allows you to manage a fixed number of goroutines to execute tasks concurrently, reducing the overhead of creating and destroying goroutines frequently.
 
-- **syncgroup**: A wrapper around `sync.WaitGroup` with a custom panic handler.
-- **gopool**: A worker pool for managing and executing tasks concurrently with optional error and panic handling.
-- **taskgroup**: Package provides a TaskGroup structure for running and managing multiple concurrent tasks with support
-  for
-  context and interruption.
+### SyncGroup
+**syncgroup** enhances Go's sync.WaitGroup with additional features such as panic recovery and custom panic handlers. It simplifies the management of goroutines, ensuring that any panics are handled gracefully and that all goroutines complete before proceeding.
+
+### TaskGroup
+**taskgroup** offers a way to group related tasks and manage their execution as a unit. It supports interruptible tasks and automatic error propagation, making it easier to handle errors and control the flow of concurrent tasks.
+
+### GoStream
+**gostream** provides a framework for executing tasks concurrently while ensuring that their callbacks are executed sequentially. This is useful for maintaining consistency when processing results from multiple concurrent operations.
 
 ## Installation
 
@@ -19,107 +21,67 @@ go get github.com/safeblock-dev/wr
 
 ### Examples:
 
-- [WaitingGroup](example/waitgroup/main.go)
-- [Pool](example/pool/main.go)
-- [TaskGroup](example/task_group/main.go)
+- [GoPool](example/gopool/main.go)
+- [GoPool (one fail)](example/gopool_one_fail/main.go)
+- [GoStream](example/gostream/main.go)
+- [SyncGroup](example/syncgroup/main.go)
+- [TaskGroup](example/taskgroup/main.go)
 
-#### WaitingGroup
+## Benchmark Results
 
-```go
-wg := wr.NewWaitingGroup()
-wg.Go(func () {
-// Your task logic here
-log.Println("Task executed")
-})
-wg.Wait()
+System Software Overview:
+
+    Device: macbook air, m1
+    System Version: macOS 14.1 (23B74)
+    Kernel Version: Darwin 23.1.0
+
+
+Run:
+
+```sh
+make bench
 ```
 
-#### Pool
+or 
 
-```go
-ctx, cancel := context.WithCancel(context.Background())
-defer cancel()
-
-pool := wr.NewPool(
-gopool.Context(ctx),
-gopool.MaxGoroutines(5),
-)
-defer pool.Wait()
-
-pool.Go(func () error {
-// Your task logic here
-log.Println("Task executed")
-return nil
-})
+```sh
+cd benchmark && go test ./... -bench . -benchtime 5s -timeout 0 -run=XXX -cpu 1 -benchmem
 ```
-
-#### Tasks
-
-```go
-group := taskgroup.New()
-
-group.Add(taskgroup.SignalHandler(context.TODO(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM))
-log.Println("We're waiting for 5 seconds, giving you an opportunity to gracefully exit the program.")
-
-// Actor 1: performs a long operation
-group.AddContext(func (ctx context.Context) error {
-log.Println("Actor 1 working...")
-<-ctx.Done()
-log.Println("Actor 1 stopped")
-return nil
-}, func (context.Context, error) {
-log.Println("Actor 1 interrupted")
-})
-
-// Actor 2: returns an error
-group.Add(func () error {
-log.Println("Actor 2 working...")
-time.Sleep(5 * time.Second)
-log.Println("Actor 2 stopped")
-return errors.New("error in actor 2")
-}, func (error) {
-log.Println("Actor 2 interrupted")
-})
-
-// Run all actors and wait for their completion
-if err := group.Run(); err != nil {
-log.Println("Error in group:", err)
-}
-```
-
-### Benchmark
-
-- [conc](github.com/sourcegraph/conc)
-
-#### WaitingGroup
-
-| Benchmark              | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
-|------------------------|------------|--------------|---------------|-------------------------|
-| BenchmarkWrSyncGroup-8 | 5138682    | 3489         | 736           | 42                      |
-| BenchmarkConcGroup-8   | 4442769    | 3601         | 734           | 42                      |
-
-#### Pool
 
 - [pond](github.com/alitto/pond)
 - [gopool](github.com/devchat-ai/gopool)
 - [ants/v2](github.com/panjf2000/ants/v2)
 - [conc](github.com/sourcegraph/conc)
 
-| Benchmark                | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
-|--------------------------|------------|--------------|---------------|-------------------------|
-| BenchmarkGoPool-8        | 17103136   | 365.3        | 33            | 3                       |
-| BenchmarkConcErrorPool-8 | 17164700   | 397.1        | 66            | 4                       |
-| BenchmarkGopool-8        | 18526196   | 345.1        | 33            | 3                       |
-| BenchmarkAnts-8          | 17683563   | 337.2        | 40            | 3                       |
-| BenchmarkPond-8          | 6861000    | 1232         | 32            | 3                       |
+## Pool
 
-#### TaskGroup
+| Benchmark       | Iterations        | Time (ns/op)      | Memory (B/op)    | Allocations (allocs/op) |
+|-----------------|-------------------|-------------------|------------------|-------------------------|
+| Default         | 14,130,334        | 400.6             | 88               | 4                       |
+| Wr              | 20,005,642        | 300.8             | 33               | 3                       |
+| Conc            | 16,104,584        | 424.3             | 66               | 4                       |
+| Gopool          | 13,473,462        | 437.8             | 33               | 3                       |
+| Ants            | 16,403,790        | 366.7             | 40               | 3                       |
+| Pond            | 20,494,136        | 299.3             | 32               | 3                       |
 
-### Task
+## Stream
 
-- [run](https://github.com/oklog/run)
+| Benchmark       | Iterations        | Time (ns/op)      | Memory (B/op)    | Allocations (allocs/op) |
+|-----------------|-------------------|-------------------|------------------|-------------------------|
+| Wr              | 9,830,470         | 543.8             | 104              | 7                       |
+| Conc            | 12,192,182        | 493.5             | 104              | 7                       |
 
-| Benchmark              | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
-|------------------------|------------|--------------|---------------|-------------------------|
-| BenchmarkWrTaskGroup-8 | 1218404    | 4518         | 1680          | 60                      |
-| BenchmarkRunTasks-8    | 1000000    | 5349         | 1560          | 58                      |
+## SyncGroup
+
+| Benchmark       | Iterations        | Time (ns/op)      | Memory (B/op)    | Allocations (allocs/op) |
+|-----------------|-------------------|-------------------|------------------|-------------------------|
+| Default         | 2,299,267         | 2634              | 549              | 31                      |
+| Wr              | 2,046,895         | 2958              | 712              | 41                      |
+| Conc            | 2,028,130         | 2994              | 712              | 41                      |
+
+## TaskGroup
+
+| Benchmark       | Iterations        | Time (ns/op)      | Memory (B/op)    | Allocations (allocs/op) |
+|-----------------|-------------------|-------------------|------------------|-------------------------|
+| Wr              | 1,714,483         | 3492              | 1680             | 59                      |
+| Run             | 1,512,882         | 3975              | 1560             | 57                      |
