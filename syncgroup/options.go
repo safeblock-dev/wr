@@ -1,4 +1,4 @@
-package wrgroup
+package syncgroup
 
 import (
 	"log"

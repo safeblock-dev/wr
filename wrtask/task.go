@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/safeblock-dev/wr/panics"
-	"github.com/safeblock-dev/wr/wrgroup"
+	"github.com/safeblock-dev/wr/syncgroup"
 )
 
 // TaskGroup manages a collection of concurrent tasks (actors).
@@ -75,8 +75,8 @@ func (g *TaskGroup) Run() error {
 	errors := make(chan error, len(g.actors))
 	defer close(errors)
 
-	// Use wrgroup to manage task goroutines and handle panics.
-	wg := wrgroup.New(wrgroup.PanicHandler(func(recovered panics.Recovered) {
+	// Use syncgroup to manage task goroutines and handle panics.
+	wg := syncgroup.New(syncgroup.PanicHandler(func(recovered panics.Recovered) {
 		errors <- recovered.AsError()
 	}))
 

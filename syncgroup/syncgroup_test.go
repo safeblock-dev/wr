@@ -1,4 +1,4 @@
-package wrgroup_test
+package syncgroup_test
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/safeblock-dev/wr/panics"
-	"github.com/safeblock-dev/wr/wrgroup"
+	"github.com/safeblock-dev/wr/syncgroup"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +18,7 @@ func TestWaitGroup_Go(t *testing.T) {
 		t.Parallel()
 
 		var counter atomic.Int64
-		wg := wrgroup.New()
+		wg := syncgroup.New()
 
 		for i := 0; i < 10; i++ {
 			wg.Go(func() {
@@ -39,7 +39,7 @@ func TestPanicHandler(t *testing.T) {
 		panicHandled = true
 	}
 
-	wg := wrgroup.New(wrgroup.PanicHandler(panicHandler))
+	wg := syncgroup.New(syncgroup.PanicHandler(panicHandler))
 	wg.Go(func() {
 		panic("test panic")
 	})
@@ -57,7 +57,7 @@ func TestDefaultPanicHandler(t *testing.T) {
 		log.SetOutput(nil)
 	}()
 
-	wg := wrgroup.New()
+	wg := syncgroup.New()
 	wg.Go(func() {
 		panic("test panic")
 	})

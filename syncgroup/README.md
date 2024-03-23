@@ -1,6 +1,6 @@
-### wrgroup
+### syncgroup
 
-The **wrgroup** package provides an enhanced version of the standard sync.WaitGroup with additional features for managing concurrent tasks. Key features include:
+The **syncgroup** package provides an enhanced version of the standard sync.WaitGroup with additional features for managing concurrent tasks. Key features include:
 
 - **Panic Handling:** Customizable panic handling mechanism to capture and handle panics that occur within goroutines.
 - **Flexible Task Submission:** Ability to submit tasks to the group and automatically manage their completion.

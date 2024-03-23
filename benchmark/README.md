@@ -2,10 +2,10 @@
 
 ### WaitingGroup
 
-| Benchmark            | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
-|----------------------|------------|--------------|---------------|-------------------------|
-| BenchmarkWrGroup-8   | 5138682    | 3489         | 736           | 42                      |
-| BenchmarkConcGroup-8 | 4442769    | 3601         | 734           | 42                      |
+| Benchmark              | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
+|------------------------|------------|--------------|---------------|-------------------------|
+| BenchmarkWrSyncGroup-8 | 5138682    | 3489         | 736           | 42                      |
+| BenchmarkConcGroup-8   | 4442769    | 3601         | 734           | 42                      |
 
 ### Pool
 

@@ -4,25 +4,25 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/safeblock-dev/wr/wrgroup"
+	"github.com/safeblock-dev/wr/syncgroup"
 )
 
 // Pool manages a pool of goroutines that can execute tasks concurrently.
 type Pool struct {
-	group        wrgroup.WaitGroup  // Manages goroutines.
-	ctx          context.Context    // Manages the lifecycle of the pool.
-	limiter      limiter            // Controls the number of goroutines.
-	tasks        chan func() error  // Channel for tasks to be executed by the pool.
-	errorHandler func(err error)    // Handles errors during task execution.
-	cancelFunc   context.CancelFunc // Cancels the context.
-	groupOpts    []wrgroup.Option   // Options for the wait group.
-	stopped      atomic.Bool        // Indicates whether the pool is stopped.
+	group        syncgroup.WaitGroup // Manages goroutines.
+	ctx          context.Context     // Manages the lifecycle of the pool.
+	limiter      limiter             // Controls the number of goroutines.
+	tasks        chan func() error   // Channel for tasks to be executed by the pool.
+	errorHandler func(err error)     // Handles errors during task execution.
+	cancelFunc   context.CancelFunc  // Cancels the context.
+	groupOpts    []syncgroup.Option  // Options for the wait group.
+	stopped      atomic.Bool         // Indicates whether the pool is stopped.
 }
 
 // New creates a new Pool with the provided options.
 func New(options ...Option) *Pool {
 	pool := &Pool{
-		groupOpts: make([]wrgroup.Option, 0, 1),
+		groupOpts: make([]syncgroup.Option, 0, 1),
 		tasks:     make(chan func() error),
 	}
 
@@ -31,7 +31,7 @@ func New(options ...Option) *Pool {
 		opt(pool)
 	}
 
-	pool.group = *wrgroup.New(pool.groupOpts...)
+	pool.group = *syncgroup.New(pool.groupOpts...)
 
 	// Initialize base context (if not already set).
 	if pool.ctx == nil {

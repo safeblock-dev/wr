@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/safeblock-dev/wr/panics"
-	"github.com/safeblock-dev/wr/wrgroup"
+	"github.com/safeblock-dev/wr/syncgroup"
 )
 
 // Option represents an option that can be passed when instantiating a Pool to customize it.
@@ -13,7 +13,7 @@ type Option func(pool *Pool)
 // PanicHandler sets the panic handler function for the pool.
 func PanicHandler(panicHandler func(recovered panics.Recovered)) Option {
 	return func(pool *Pool) {
-		pool.groupOpts = append(pool.groupOpts, wrgroup.PanicHandler(panicHandler))
+		pool.groupOpts = append(pool.groupOpts, syncgroup.PanicHandler(panicHandler))
 	}
 }
 

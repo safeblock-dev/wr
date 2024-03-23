@@ -7,7 +7,7 @@ import (
 
 	"github.com/safeblock-dev/wr/gopool"
 	"github.com/safeblock-dev/wr/panics"
-	"github.com/safeblock-dev/wr/wrgroup"
+	"github.com/safeblock-dev/wr/syncgroup"
 )
 
 // Stream manages the execution of tasks and their corresponding callbacks.
@@ -18,7 +18,7 @@ type Stream struct {
 	errorHandler    func(err error) // Handler for errors occurring during task execution.
 	contextCancel   context.CancelFunc
 	workerPoolOpts  []gopool.Option
-	callbackGroup   wrgroup.WaitGroup
+	callbackGroup   syncgroup.WaitGroup
 	workerPool      gopool.Pool
 	initOnce        sync.Once
 	stopped         atomic.Bool
@@ -35,7 +35,7 @@ func New(options ...Option) *Stream {
 	stream := &Stream{
 		panicHandler:   DefaultPanicHandler,
 		workerPoolOpts: make([]gopool.Option, 0, workerPoolOptsCount),
-		callbackGroup:  *wrgroup.New(),
+		callbackGroup:  *syncgroup.New(),
 	}
 
 	// Apply all options.

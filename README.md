@@ -5,7 +5,7 @@ custom `WaitGroup` implementation with panic handling and a flexible worker pool
 
 ## Features
 
-- **wrgroup**: A wrapper around `sync.WaitGroup` with a custom panic handler.
+- **syncgroup**: A wrapper around `sync.WaitGroup` with a custom panic handler.
 - **gopool**: A worker pool for managing and executing tasks concurrently with optional error and panic handling.
 - **wrtask**: Package provides a TaskGroup structure for running and managing multiple concurrent tasks with support for
   context and interruption.
@@ -92,10 +92,10 @@ log.Println("Error in group:", err)
 
 #### WaitingGroup
 
-| Benchmark            | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
-|----------------------|------------|--------------|---------------|-------------------------|
-| BenchmarkWrGroup-8   | 5138682    | 3489         | 736           | 42                      |
-| BenchmarkConcGroup-8 | 4442769    | 3601         | 734           | 42                      |
+| Benchmark              | Iterations | Time (ns/op) | Memory (B/op) | Allocations (allocs/op) |
+|------------------------|------------|--------------|---------------|-------------------------|
+| BenchmarkWrSyncGroup-8 | 5138682    | 3489         | 736           | 42                      |
+| BenchmarkConcGroup-8   | 4442769    | 3601         | 734           | 42                      |
 
 
 #### Pool

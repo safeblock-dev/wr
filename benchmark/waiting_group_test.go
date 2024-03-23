@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/safeblock-dev/wr/wrgroup"
+	"github.com/safeblock-dev/wr/syncgroup"
 	"github.com/sourcegraph/conc"
 )
 
@@ -12,9 +12,9 @@ const (
 	maxWGGoroutines = 10
 )
 
-func BenchmarkWrGroup(b *testing.B) {
+func BenchmarkWrSyncGroup(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		wg := wrgroup.New()
+		wg := syncgroup.New()
 
 		for j := 0; j < maxWGGoroutines; j++ {
 			wg.Go(func() {
