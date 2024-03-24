@@ -34,6 +34,9 @@ func Context(ctx context.Context) Option {
 // MaxGoroutines sets the maximum number of goroutines allowed in the pool.
 func MaxGoroutines(limit int) Option {
 	return func(pool *Pool) {
+		if limit < 1 {
+			limit = 1
+		}
 		pool.limiter = make(limiter, limit)
 	}
 }

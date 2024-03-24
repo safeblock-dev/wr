@@ -39,7 +39,7 @@ func TestPool_Go(t *testing.T) {
 		t.Parallel()
 
 		// Test different values for maximum concurrent goroutines.
-		for _, maxConcurrent := range []int{1, 10, 100} {
+		for _, maxConcurrent := range []int{0, 1, 10, 100} {
 			t.Run(strconv.Itoa(maxConcurrent), func(t *testing.T) {
 				t.Parallel()
 
@@ -48,6 +48,10 @@ func TestPool_Go(t *testing.T) {
 
 				var currentConcurrent atomic.Int64 // Tracks the current number of concurrent goroutines.
 				var errCount atomic.Int64          // Tracks the number of times the concurrency limit is exceeded.
+
+				if maxConcurrent == 0 {
+					maxConcurrent = 1
+				}
 
 				taskCount := maxConcurrent * 10 // Total number of tasks to submit.
 
