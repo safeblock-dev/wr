@@ -50,13 +50,13 @@ func (g *TaskGroup) Add(execute ExecuteFn, interrupt InterruptFn) {
 // especially its cancellation signal. The 'interrupt' function is called to preemptively stop the task,
 // which should cause 'execute' to return promptly. The 'interrupt' function is provided with the context
 // and the error that caused the interruption, allowing for any necessary cleanup or error handling.
-func (g *TaskGroup) AddContext(ctx context.Context, execute ExecuteCtxFn, interrupt InterruptCtxFn) {
+func (g *TaskGroup) AddContext(execute ExecuteCtxFn, interrupt InterruptCtxFn) {
 	if execute == nil || interrupt == nil {
 		panic("execute and interrupt functions must not be nil")
 	}
 
 	// Create a new cancellable context derived from the provided context.
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	g.actors = append(g.actors, actor{
 		func() error {

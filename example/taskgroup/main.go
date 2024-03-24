@@ -29,7 +29,7 @@ func main() {
 	log.Println("We're waiting for 5 seconds, giving you an opportunity to gracefully exit the program.")
 
 	// Actor 1: performs a long operation
-	group.AddContext(ctx, func(ctx context.Context) error {
+	group.AddContext(func(ctx context.Context) error {
 		log.Println("Actor 1 working...")
 		<-ctx.Done()
 		log.Println("Actor 1 stopped")
