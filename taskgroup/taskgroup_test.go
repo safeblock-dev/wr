@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/safeblock-dev/wr/taskgroup"
 	"github.com/stretchr/testify/require"
@@ -40,6 +41,9 @@ func TestTaskGroup_AddContext(t *testing.T) {
 		t.Parallel()
 
 		group := taskgroup.New()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		var (
 			interrupted = false
 			syncer      = make(chan struct{})
@@ -50,7 +54,7 @@ func TestTaskGroup_AddContext(t *testing.T) {
 
 			return nil
 		}, taskgroup.SkipInterrupt())
-		group.AddContext(func(ctx context.Context) error {
+		group.AddContext(ctx, func(ctx context.Context) error {
 			syncer <- struct{}{}
 			<-ctx.Done()
 
@@ -68,9 +72,12 @@ func TestTaskGroup_AddContext(t *testing.T) {
 		t.Parallel()
 
 		group := taskgroup.New()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		var interrupted bool
 
-		group.AddContext(func(_ context.Context) error {
+		group.AddContext(ctx, func(_ context.Context) error {
 			return errors.New("task error")
 		}, func(_ context.Context, _ error) {
 			interrupted = true
@@ -87,7 +94,7 @@ func TestTaskGroup_AddContext(t *testing.T) {
 		tasks := taskgroup.New()
 
 		require.Panics(t, func() {
-			tasks.AddContext(nil, func(_ context.Context, _ error) {})
+			tasks.AddContext(context.Background(), nil, func(_ context.Context, _ error) {})
 		}, "expected panic when adding an actor with a nil execute function")
 	})
 
@@ -97,8 +104,52 @@ func TestTaskGroup_AddContext(t *testing.T) {
 		tasks := taskgroup.New()
 
 		require.Panics(t, func() {
-			tasks.AddContext(func(_ context.Context) error { return nil }, nil)
+			tasks.AddContext(context.Background(), func(_ context.Context) error { return nil }, nil)
 		}, "expected panic when adding an actor with a nil interrupt function")
+	})
+
+	t.Run("context cancellation", func(t *testing.T) {
+		t.Parallel()
+
+		group := taskgroup.New()
+		ctx, cancel := context.WithCancel(context.Background())
+
+		var interrupted bool
+
+		group.AddContext(ctx, func(ctx context.Context) error {
+			<-ctx.Done()
+
+			return ctx.Err()
+		}, func(_ context.Context, _ error) {
+			interrupted = true
+		})
+
+		cancel() // Cancel the context to trigger interruption.
+		err := group.Run()
+		require.ErrorIs(t, err, context.Canceled)
+		require.True(t, interrupted)
+	})
+
+	t.Run("context timeout", func(t *testing.T) {
+		t.Parallel()
+
+		group := taskgroup.New()
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+
+		var interrupted bool
+
+		group.AddContext(ctx, func(ctx context.Context) error {
+			<-ctx.Done()
+
+			return ctx.Err()
+		}, func(_ context.Context, _ error) {
+			interrupted = true
+		})
+
+		err := group.Run()
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		require.True(t, interrupted)
 	})
 }
 

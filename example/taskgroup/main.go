@@ -20,13 +20,16 @@ import (
 // 2024/03/21 04:06:13 Actor 1 stopped
 
 func main() {
+	ctx := context.Background()
+
 	group := taskgroup.New()
 
-	group.Add(taskgroup.SignalHandler(context.TODO(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM))
+	// Signal
+	group.Add(taskgroup.SignalHandler(ctx, os.Interrupt, syscall.SIGINT, syscall.SIGTERM))
 	log.Println("We're waiting for 5 seconds, giving you an opportunity to gracefully exit the program.")
 
 	// Actor 1: performs a long operation
-	group.AddContext(func(ctx context.Context) error {
+	group.AddContext(ctx, func(ctx context.Context) error {
 		log.Println("Actor 1 working...")
 		<-ctx.Done()
 		log.Println("Actor 1 stopped")

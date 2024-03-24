@@ -45,23 +45,26 @@ func (g *TaskGroup) Add(execute ExecuteFn, interrupt InterruptFn) {
 	g.actors = append(g.actors, actor{execute, interrupt})
 }
 
-// AddContext adds a task to the TaskGroup that accepts a context.
-// The 'execute' function is the main task logic that should respect the provided context,
-// particularly its cancellation signal. The 'interrupt' function is called when the task
-// needs to be preemptively stopped, which should cause 'execute' to return quickly.
-// The 'interrupt' function is also provided with the context and the error that caused the interruption.
-func (g *TaskGroup) AddContext(execute ExecuteCtxFn, interrupt InterruptCtxFn) {
+// AddContext adds a task to the TaskGroup that operates within a given context.
+// The 'execute' function is the main logic of the task, which should respect the provided context,
+// especially its cancellation signal. The 'interrupt' function is called to preemptively stop the task,
+// which should cause 'execute' to return promptly. The 'interrupt' function is provided with the context
+// and the error that caused the interruption, allowing for any necessary cleanup or error handling.
+func (g *TaskGroup) AddContext(ctx context.Context, execute ExecuteCtxFn, interrupt InterruptCtxFn) {
 	if execute == nil || interrupt == nil {
 		panic("execute and interrupt functions must not be nil")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	// Create a new cancellable context derived from the provided context.
+	ctx, cancel := context.WithCancel(ctx)
 
 	g.actors = append(g.actors, actor{
 		func() error {
+			// Execute the task, passing the cancellable context.
 			return execute(ctx)
 		},
 		func(err error) {
+			// Cancel the context and call the interrupt function with the error.
 			cancel()
 			interrupt(ctx, err)
 		},

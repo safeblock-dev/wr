@@ -10,6 +10,58 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestContextHandler(t *testing.T) {
+	t.Parallel()
+
+	t.Run("context canceled", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		execute, interrupt := taskgroup.ContextHandler(ctx)
+
+		// Cancel the context to trigger termination.
+		cancel()
+
+		// The execute function should return an error indicating the context was canceled.
+		err := execute()
+		require.ErrorIs(t, err, context.Canceled, "Execute should return context.Canceled error")
+
+		// The interrupt function should not cause any error.
+		interrupt(nil)
+	})
+
+	t.Run("context timeout", func(t *testing.T) {
+		t.Parallel()
+
+		// Create a context that will be canceled after a timeout.
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+
+		execute, interrupt := taskgroup.ContextHandler(ctx)
+
+		// The execute function should eventually return an error due to the timeout.
+		err := execute()
+		require.ErrorIs(t, err, context.DeadlineExceeded, "Execute should return context.DeadlineExceeded error")
+
+		// The interrupt function should not cause any error.
+		interrupt(nil)
+	})
+
+	t.Run("interrupt", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := context.Background()
+		execute, interrupt := taskgroup.ContextHandler(ctx)
+
+		// Simulate interrupting the handler.
+		interrupt(nil)
+
+		// The execute function should return an error indicating the context was canceled.
+		err := execute()
+		require.ErrorIs(t, err, context.Canceled, "Execute should return context.Canceled error after interrupt")
+	})
+}
+
 func TestSignalHandler(t *testing.T) {
 	t.Parallel()
 
