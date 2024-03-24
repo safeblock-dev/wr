@@ -110,10 +110,19 @@ func (g *TaskGroup) Run() error {
 	return err
 }
 
+// Size returns the number of tasks (actors) currently added to the TaskGroup.
 func (g *TaskGroup) Size() int {
 	return len(g.actors)
 }
 
+// SkipInterrupt returns an InterruptFn that does nothing when called.
+// It can be used when you don't need any specific interrupt handling for a task.
 func SkipInterrupt() InterruptFn {
 	return func(error) {}
+}
+
+// SkipInterruptCtx returns an InterruptCtxFn that does nothing when called.
+// It can be used when you don't need any specific interrupt handling for a task that accepts a context.
+func SkipInterruptCtx() InterruptCtxFn {
+	return func(context.Context, error) {}
 }

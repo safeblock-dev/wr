@@ -94,7 +94,7 @@ func TestTaskGroup_AddContext(t *testing.T) {
 		tasks := taskgroup.New()
 
 		require.Panics(t, func() {
-			tasks.AddContext(context.Background(), nil, func(_ context.Context, _ error) {})
+			tasks.AddContext(context.Background(), nil, taskgroup.SkipInterruptCtx())
 		}, "expected panic when adding an actor with a nil execute function")
 	})
 
