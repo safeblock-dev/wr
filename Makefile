@@ -22,3 +22,7 @@ test: ## Run tests
 .PHONY: bench
 bench: ## Run benchmarks. See https://pkg.go.dev/cmd/go#hdr-Testing_flags
 	cd benchmark && go test ./... -bench . -benchtime 5s -timeout 0 -run=XXX -cpu 1 -benchmem
+
+.PHONY: update
+update: ## Update packages
+	@find . -name "go.mod" -execdir sh -c 'echo "Updating $$(pwd)"; go get -u ./... && go mod tidy' \;
