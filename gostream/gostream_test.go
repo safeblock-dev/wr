@@ -87,7 +87,7 @@ func TestStream_Go(t *testing.T) {
 		stream.Go(func() (gostream.Callback, error) {
 			isStarted = true
 
-			return nil, nil
+			return nil, nil //nolint: nilnil
 		})
 
 		require.False(t, isStarted)
@@ -289,7 +289,7 @@ func TestStream_Wait(t *testing.T) {
 	stream.Go(func() (gostream.Callback, error) {
 		callbackExecuted.Store(true)
 
-		return nil, nil
+		return nil, nil //nolint: nilnil
 	})
 
 	stream.Wait()
@@ -307,7 +307,7 @@ func TestStream_IsStopped(t *testing.T) {
 
 		stream := gostream.New()
 		stream.Go(func() (gostream.Callback, error) {
-			return nil, nil
+			return nil, nil //nolint: nilnil
 		})
 
 		require.False(t, stream.IsStopped())
@@ -321,7 +321,7 @@ func TestStream_IsStopped(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		stream := gostream.New(gostream.Context(ctx))
 		stream.Go(func() (gostream.Callback, error) {
-			return nil, nil
+			return nil, nil //nolint: nilnil
 		})
 
 		cancel()
@@ -336,7 +336,7 @@ func TestStream_CallbackNilFunction(t *testing.T) {
 
 	stream := gostream.New()
 	stream.Go(func() (gostream.Callback, error) {
-		return nil, nil // Passing nil as the callback function.
+		return nil, nil //nolint: nilnil // Passing nil as the callback function.
 	})
 
 	stream.Wait()
