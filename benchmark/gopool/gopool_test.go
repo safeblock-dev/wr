@@ -30,6 +30,11 @@ func BenchmarkDefault(b *testing.B) {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
+			defer func() {
+				if pc := recover(); pc != nil {
+					fmt.Println(pc)
+				}
+			}()
 
 			msg := fmt.Sprintf("%d", i)
 			if i%10 == 0 {
