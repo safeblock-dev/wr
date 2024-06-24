@@ -3,26 +3,13 @@ package gostream
 import (
 	"context"
 	"log"
-
-	"github.com/safeblock-dev/wr/gopool"
-	"github.com/safeblock-dev/wr/panics"
-)
-
-// Constants for the default capacity of options slices.
-const (
-	workerPoolOptsCount = 2
 )
 
 // Option represents an option that can be passed when instantiating a Stream to customize it.
 type Option func(stream *Stream)
 
-// DefaultPanicHandler is the default panic handler that prints the panic information.
-func DefaultPanicHandler(recovered panics.Recovered) {
-	log.Println(recovered.String())
-}
-
 // PanicHandler sets the panic handler function for the stream.
-func PanicHandler(panicHandler func(recovered panics.Recovered)) Option {
+func PanicHandler(panicHandler func(pc any)) Option {
 	return func(stream *Stream) {
 		stream.panicHandler = panicHandler
 	}
@@ -38,14 +25,20 @@ func ErrorHandler(errorHandler func(err error)) Option {
 // Context sets a parent context for the stream to stop all workers when it is cancelled.
 func Context(ctx context.Context) Option {
 	return func(stream *Stream) {
-		stream.ctx = ctx
-		stream.workerPoolOpts = append(stream.workerPoolOpts, gopool.Context(ctx))
+		stream.parentCtx = ctx
+		stream.ctx, stream.cancelFunc = context.WithCancel(ctx)
 	}
 }
 
 // MaxGoroutines sets the maximum number of goroutines allowed in the worker pool.
 func MaxGoroutines(limit int) Option {
 	return func(stream *Stream) {
-		stream.workerPoolOpts = append(stream.workerPoolOpts, gopool.MaxGoroutines(limit))
+		stream.maxGoroutines = limit
 	}
+}
+
+// defaultPanicHandler is the default panic handler that prints the panic information.
+func defaultPanicHandler(pc any) {
+	const red = "\u001B[31m"
+	log.Printf("[%[1]sERROR%[1]s] %v", red, pc)
 }

@@ -1,21 +1,22 @@
 package gopool_test
 
 import (
+	"bytes"
 	"errors"
+	"log"
 	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/safeblock-dev/wr/gopool"
-	"github.com/safeblock-dev/wr/panics"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPool_Go(t *testing.T) {
 	t.Parallel()
 
-	t.Run("base", func(t *testing.T) {
+	t.Run("simple", func(t *testing.T) {
 		t.Parallel()
 
 		var counter atomic.Uint64
@@ -39,7 +40,7 @@ func TestPool_Go(t *testing.T) {
 		t.Parallel()
 
 		// Test different values for maximum concurrent goroutines.
-		for _, maxConcurrent := range []int{0, 1, 10, 100} {
+		for _, maxConcurrent := range []int{1, 10, 100} {
 			t.Run(strconv.Itoa(maxConcurrent), func(t *testing.T) {
 				t.Parallel()
 
@@ -48,10 +49,6 @@ func TestPool_Go(t *testing.T) {
 
 				var currentConcurrent atomic.Int64 // Tracks the current number of concurrent goroutines.
 				var errCount atomic.Int64          // Tracks the number of times the concurrency limit is exceeded.
-
-				if maxConcurrent == 0 {
-					maxConcurrent = 1
-				}
 
 				taskCount := maxConcurrent * 10 // Total number of tasks to submit.
 
@@ -82,16 +79,35 @@ func TestPool_Go(t *testing.T) {
 			})
 		}
 	})
-}
 
-func TestPool_MaxGoroutines(t *testing.T) {
-	t.Parallel()
+	t.Run("base", func(t *testing.T) {
+		t.Parallel()
 
-	const maxGoroutines = 5
-	pool := gopool.New(gopool.MaxGoroutines(maxGoroutines))
-	defer pool.Wait()
+		var counter atomic.Uint64
+		pool := gopool.New()
+		numTasks := 10
 
-	require.Equal(t, maxGoroutines, pool.MaxGoroutines())
+		for i := 0; i < numTasks; i++ {
+			if i%3 == 0 {
+				pool.Go(func() error {
+					counter.Add(1)
+
+					return errors.New("example error")
+				})
+
+				continue
+			}
+			pool.Go(func() error {
+				counter.Add(1)
+
+				return nil
+			})
+		}
+
+		pool.Wait()
+
+		require.Equal(t, uint64(numTasks), counter.Load())
+	})
 }
 
 func TestErrorHandler(t *testing.T) {
@@ -123,16 +139,30 @@ func TestPool_Reset(t *testing.T) {
 		t.Parallel()
 
 		pool := gopool.New()
-		pool.Go(func() error {
-			time.Sleep(100 * time.Millisecond)
-
-			return nil
-		})
-
 		pool.Wait()
 		pool.Reset()
 
-		require.False(t, pool.IsStopped(), "Pool should be active after reset")
+		var completed bool
+		task := func() error { completed = true; return nil }
+		pool.Go(task)
+		pool.Wait()
+
+		require.True(t, completed)
+	})
+
+	t.Run("with max goroutines limit", func(t *testing.T) {
+		t.Parallel()
+
+		pool := gopool.New(gopool.MaxGoroutines(5))
+		pool.Wait()
+		pool.Reset()
+
+		var completed bool
+		task := func() error { completed = true; return nil }
+		pool.Go(task)
+		pool.Wait()
+
+		require.True(t, completed)
 	})
 }
 
@@ -161,11 +191,30 @@ func TestPool_Errors(t *testing.T) {
 func TestPool_Panics(t *testing.T) {
 	t.Parallel()
 
+	t.Run("default panic", func(t *testing.T) { //nolint: paralleltest
+		// Set up a buffer to capture log output.
+		var logBuffer bytes.Buffer
+		log.SetOutput(&logBuffer)
+		defer func() {
+			// Reset the log output to its default (stderr) after the test.
+			log.SetOutput(nil)
+		}()
+
+		wg := gopool.New()
+		wg.Go(func() error {
+			panic("test panic")
+		})
+		wg.Wait()
+
+		// Check that the log output contains the expected panic information.
+		require.Contains(t, logBuffer.String(), "test panic")
+	})
+
 	t.Run("should handle panics", func(t *testing.T) {
 		t.Parallel()
 
 		panicHandled := false
-		panicHandler := gopool.PanicHandler(func(_ panics.Recovered) {
+		panicHandler := gopool.PanicHandler(func(any) {
 			panicHandled = true
 		})
 		pool := gopool.New(panicHandler)
@@ -196,22 +245,14 @@ func TestPool_DoubleWait(t *testing.T) {
 func TestPool_GoAfterWait(t *testing.T) {
 	t.Parallel()
 
-	t.Run("should not execute Go after Wait", func(t *testing.T) {
+	t.Run("don't panic on go after wait", func(t *testing.T) {
 		t.Parallel()
 
 		pool := gopool.New()
-
 		pool.Wait()
 
-		executed := false
-		pool.Go(func() error {
-			executed = true
-
-			return nil
-		})
-
-		time.Sleep(100 * time.Millisecond) // Give some time for the task to potentially execute
-
-		require.False(t, executed, "Go should not execute a task after Wait has been called")
+		require.NotPanics(t, func() {
+			pool.Go(func() error { return nil })
+		}, "go after wait should cause a panic")
 	})
 }

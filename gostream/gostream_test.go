@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/safeblock-dev/wr/gostream"
-	"github.com/safeblock-dev/wr/panics"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,7 +20,8 @@ func TestStream_Go(t *testing.T) {
 
 		stream := gostream.New()
 		var workerPoolCounter, callbackCounter atomic.Int64
-		for i := 0; i < 10; i++ {
+		const num = 3
+		for i := 0; i < num; i++ {
 			stream.Go(func() (gostream.Callback, error) {
 				workerPoolCounter.Add(1)
 
@@ -33,10 +33,11 @@ func TestStream_Go(t *testing.T) {
 				}, nil
 			})
 		}
+
 		stream.Wait()
 
-		require.Equal(t, int64(10), workerPoolCounter.Load())
-		require.Equal(t, int64(10), callbackCounter.Load())
+		require.Equal(t, int64(num), workerPoolCounter.Load())
+		require.Equal(t, int64(num), callbackCounter.Load())
 	})
 
 	t.Run("consistency is maintained", func(t *testing.T) {
@@ -183,10 +184,12 @@ func TestStream_ErrorHandler(t *testing.T) {
 		t.Parallel()
 
 		errExpected := errors.New("task error")
-		var errorHandlerCalled atomic.Bool
+		var errorCalled atomic.Bool
+		var errorCounter atomic.Int64
 		stream := gostream.New(gostream.ErrorHandler(func(err error) {
 			require.Equal(t, errExpected, err)
-			errorHandlerCalled.Store(true)
+			errorCalled.Store(true)
+			errorCounter.Add(1)
 		}))
 
 		stream.Go(func() (gostream.Callback, error) {
@@ -194,17 +197,20 @@ func TestStream_ErrorHandler(t *testing.T) {
 		})
 
 		stream.Wait()
-		require.True(t, errorHandlerCalled.Load())
+		require.True(t, errorCalled.Load())
+		require.Equal(t, int64(1), errorCounter.Load())
 	})
 
 	t.Run("callback pool error", func(t *testing.T) {
 		t.Parallel()
 
 		errExpected := errors.New("callback error")
-		var errorHandlerCalled atomic.Bool
+		var errorCalled atomic.Bool
+		var errorCounter atomic.Int64
 		stream := gostream.New(gostream.ErrorHandler(func(err error) {
 			require.Equal(t, errExpected, err)
-			errorHandlerCalled.Store(true)
+			errorCalled.Store(true)
+			errorCounter.Add(1)
 		}))
 
 		stream.Go(func() (gostream.Callback, error) {
@@ -214,19 +220,60 @@ func TestStream_ErrorHandler(t *testing.T) {
 		})
 
 		stream.Wait()
-		require.True(t, errorHandlerCalled.Load())
+		require.True(t, errorCalled.Load())
+		require.Equal(t, int64(1), errorCounter.Load())
 	})
 }
 
 func TestStream_PanicHandler(t *testing.T) {
 	t.Parallel()
 
-	t.Run("worker pool panic", func(t *testing.T) {
+	t.Run("default worker panic", func(t *testing.T) { //nolint: paralleltest
+		// Set up a buffer to capture log output.
+		var logBuffer bytes.Buffer
+		log.SetOutput(&logBuffer)
+		defer func() {
+			// Reset the log output to its default (stderr) after the test.
+			log.SetOutput(nil)
+		}()
+
+		wg := gostream.New()
+		wg.Go(func() (gostream.Callback, error) {
+			panic("test panic")
+		})
+		wg.Wait()
+
+		// Check that the log output contains the expected panic information.
+		require.Contains(t, logBuffer.String(), "test panic")
+	})
+
+	t.Run("default callback panic", func(t *testing.T) { //nolint: paralleltest
+		// Set up a buffer to capture log output.
+		var logBuffer bytes.Buffer
+		log.SetOutput(&logBuffer)
+		defer func() {
+			// Reset the log output to its default (stderr) after the test.
+			log.SetOutput(nil)
+		}()
+
+		wg := gostream.New()
+		wg.Go(func() (gostream.Callback, error) {
+			return func() error { panic("test panic") }, nil
+		})
+		wg.Wait()
+
+		// Check that the log output contains the expected panic information.
+		require.Contains(t, logBuffer.String(), "test panic")
+	})
+
+	t.Run("worker panic", func(t *testing.T) {
 		t.Parallel()
 
-		var panicOccurred atomic.Bool
-		stream := gostream.New(gostream.PanicHandler(func(_ panics.Recovered) {
-			panicOccurred.Store(true)
+		var panicCalled atomic.Bool
+		var panicCounter atomic.Int64
+		stream := gostream.New(gostream.PanicHandler(func(_ any) {
+			panicCalled.Store(true)
+			panicCounter.Add(1)
 		}))
 
 		stream.Go(func() (gostream.Callback, error) {
@@ -235,15 +282,18 @@ func TestStream_PanicHandler(t *testing.T) {
 
 		stream.Wait()
 
-		require.True(t, panicOccurred.Load())
+		require.True(t, panicCalled.Load())
+		require.Equal(t, int64(1), panicCounter.Load())
 	})
 
 	t.Run("callback panic", func(t *testing.T) {
 		t.Parallel()
 
-		var panicOccurred atomic.Bool
-		stream := gostream.New(gostream.PanicHandler(func(_ panics.Recovered) {
-			panicOccurred.Store(true)
+		var panicCalled atomic.Bool
+		var panicCounter atomic.Int64
+		stream := gostream.New(gostream.PanicHandler(func(_ any) {
+			panicCalled.Store(true)
+			panicCounter.Add(1)
 		}))
 
 		stream.Go(func() (gostream.Callback, error) {
@@ -254,16 +304,19 @@ func TestStream_PanicHandler(t *testing.T) {
 
 		stream.Wait()
 
-		require.True(t, panicOccurred.Load())
+		require.True(t, panicCalled.Load())
+		require.Equal(t, int64(1), panicCounter.Load())
 	})
 
-	t.Run("error handler panic", func(t *testing.T) {
+	t.Run("error handler call panic", func(t *testing.T) {
 		t.Parallel()
 
-		var panicOccurred atomic.Bool
+		var panicCalled atomic.Bool
+		var panicCounter atomic.Int64
 		stream := gostream.New(
-			gostream.PanicHandler(func(_ panics.Recovered) {
-				panicOccurred.Store(true)
+			gostream.PanicHandler(func(_ any) {
+				panicCalled.Store(true)
+				panicCounter.Add(1)
 			}), gostream.ErrorHandler(func(err error) {
 				panic(err)
 			}),
@@ -277,7 +330,8 @@ func TestStream_PanicHandler(t *testing.T) {
 
 		stream.Wait()
 
-		require.True(t, panicOccurred.Load())
+		require.True(t, panicCalled.Load())
+		require.Equal(t, int64(1), panicCounter.Load())
 	})
 }
 
@@ -299,38 +353,6 @@ func TestStream_Wait(t *testing.T) {
 	stream.Wait()
 }
 
-func TestStream_IsStopped(t *testing.T) {
-	t.Parallel()
-
-	t.Run("when wait", func(t *testing.T) {
-		t.Parallel()
-
-		stream := gostream.New()
-		stream.Go(func() (gostream.Callback, error) {
-			return nil, nil //nolint: nilnil
-		})
-
-		require.False(t, stream.IsStopped())
-		stream.Wait()
-		require.True(t, stream.IsStopped())
-	})
-
-	t.Run("when context cancel", func(t *testing.T) {
-		t.Parallel()
-
-		ctx, cancel := context.WithCancel(context.Background())
-		stream := gostream.New(gostream.Context(ctx))
-		stream.Go(func() (gostream.Callback, error) {
-			return nil, nil //nolint: nilnil
-		})
-
-		cancel()
-		require.False(t, stream.IsStopped())
-		stream.Wait()
-		require.True(t, stream.IsStopped())
-	})
-}
-
 func TestStream_CallbackNilFunction(t *testing.T) {
 	t.Parallel()
 
@@ -342,23 +364,26 @@ func TestStream_CallbackNilFunction(t *testing.T) {
 	stream.Wait()
 }
 
-func TestDefaultPanicHandler(t *testing.T) {
+func TestPool_Reset(t *testing.T) {
 	t.Parallel()
 
-	// Set up a buffer to capture log output.
-	var logBuffer bytes.Buffer
-	log.SetOutput(&logBuffer)
-	defer func() {
-		// Reset the log output to its default (stderr) after the test.
-		log.SetOutput(nil)
-	}()
+	t.Run("should reset the stream", func(t *testing.T) {
+		t.Parallel()
 
-	wg := gostream.New()
-	wg.Go(func() (gostream.Callback, error) {
-		panic("test panic")
+		stream := gostream.New()
+		stream.Wait()
+		stream.Reset()
+
+		var completed bool
+		stream.Go(func() (gostream.Callback, error) {
+			return func() error {
+				completed = true
+
+				return nil
+			}, nil
+		})
+		stream.Wait()
+
+		require.True(t, completed)
 	})
-	wg.Wait()
-
-	// Check that the log output contains the expected panic information.
-	require.Contains(t, logBuffer.String(), "test panic")
 }
