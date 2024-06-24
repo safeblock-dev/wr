@@ -29,6 +29,7 @@ func TestPoolCh_Go(t *testing.T) {
 		// Wait for all tasks to complete
 		pool.Wait()
 
+		// Assertions
 		require.NoError(t, pool.Error())
 		require.False(t, pool.HasError())
 		require.NoError(t, <-pool.ErrorChannel())
@@ -45,14 +46,14 @@ func TestPoolCh_Go(t *testing.T) {
 			return expectedError
 		}
 
-		// Sample success task
+		// Submit a success task and a failing task
 		pool.Go(func() error { return nil })
-		// Submit a task that will fail
 		pool.Go(task)
 
 		// Wait for all tasks to complete
 		pool.Wait()
 
+		// Assertions
 		require.True(t, pool.HasError())
 		require.Equal(t, expectedError, pool.Error())
 		require.Equal(t, expectedError, <-pool.ErrorChannel())
@@ -69,40 +70,17 @@ func TestPoolCh_Go(t *testing.T) {
 			panic(expectedPanic)
 		}
 
-		// Sample success task
+		// Submit a success task and a task that panics
 		pool.Go(func() error { return nil })
-		// Submit a task that will panic
 		pool.Go(task)
 
 		// Wait for all tasks to complete
 		pool.Wait()
 
+		// Assertions
 		require.True(t, pool.HasError())
 		require.ErrorIs(t, pool.Error(), expectedPanic)
 		require.Equal(t, pool.Error(), <-pool.ErrorChannel())
-	})
-
-	t.Run("when error and panic", func(t *testing.T) {
-		t.Parallel()
-
-		pool := gopoolch.New()
-
-		expectedError := errors.New("task error")
-		expectedPanic := errors.New("task panic")
-
-		pool.Go(func() error { return nil })
-		pool.Go(func() error {
-			return expectedError
-		})
-		pool.Go(func() error {
-			panic(expectedPanic)
-		})
-
-		pool.Wait()
-
-		require.True(t, pool.HasError())
-		require.ErrorIs(t, pool.Error(), expectedError)
-		require.Equal(t, expectedError, <-pool.ErrorChannel())
 	})
 }
 

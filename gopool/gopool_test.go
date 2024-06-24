@@ -13,10 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestPool_Go tests the Go method of the gopool.Pool.
 func TestPool_Go(t *testing.T) {
 	t.Parallel()
 
-	t.Run("simple", func(t *testing.T) {
+	t.Run("increments counter correctly", func(t *testing.T) {
 		t.Parallel()
 
 		var counter atomic.Uint64
@@ -26,7 +27,6 @@ func TestPool_Go(t *testing.T) {
 		for i := 0; i < numTasks; i++ {
 			pool.Go(func() error {
 				counter.Add(1)
-
 				return nil
 			})
 		}
@@ -80,7 +80,7 @@ func TestPool_Go(t *testing.T) {
 		}
 	})
 
-	t.Run("base", func(t *testing.T) {
+	t.Run("handles errors", func(t *testing.T) {
 		t.Parallel()
 
 		var counter atomic.Uint64
@@ -91,15 +91,12 @@ func TestPool_Go(t *testing.T) {
 			if i%3 == 0 {
 				pool.Go(func() error {
 					counter.Add(1)
-
 					return errors.New("example error")
 				})
-
 				continue
 			}
 			pool.Go(func() error {
 				counter.Add(1)
-
 				return nil
 			})
 		}
@@ -110,6 +107,7 @@ func TestPool_Go(t *testing.T) {
 	})
 }
 
+// TestErrorHandler tests the error handling capability of the gopool.Pool.
 func TestErrorHandler(t *testing.T) {
 	t.Parallel()
 
@@ -132,6 +130,7 @@ func TestErrorHandler(t *testing.T) {
 	})
 }
 
+// TestPool_Reset tests the Reset method of the gopool.Pool.
 func TestPool_Reset(t *testing.T) {
 	t.Parallel()
 
@@ -166,6 +165,7 @@ func TestPool_Reset(t *testing.T) {
 	})
 }
 
+// TestPool_Errors tests error handling and panic recovery in the gopool.Pool.
 func TestPool_Errors(t *testing.T) {
 	t.Parallel()
 
@@ -188,10 +188,11 @@ func TestPool_Errors(t *testing.T) {
 	})
 }
 
+// TestPool_Panics tests panic handling in the gopool.Pool.
 func TestPool_Panics(t *testing.T) {
 	t.Parallel()
 
-	t.Run("default panic", func(t *testing.T) { //nolint: paralleltest
+	t.Run("logs default panic", func(t *testing.T) { //nolint: paralleltest
 		// Set up a buffer to capture log output.
 		var logBuffer bytes.Buffer
 		log.SetOutput(&logBuffer)
@@ -229,6 +230,7 @@ func TestPool_Panics(t *testing.T) {
 	})
 }
 
+// TestPool_DoubleWait tests behavior of double Wait calls on gopool.Pool.
 func TestPool_DoubleWait(t *testing.T) {
 	t.Parallel()
 
@@ -242,10 +244,11 @@ func TestPool_DoubleWait(t *testing.T) {
 	})
 }
 
+// TestPool_GoAfterWait tests behavior of Go method after Wait on gopool.Pool.
 func TestPool_GoAfterWait(t *testing.T) {
 	t.Parallel()
 
-	t.Run("don't panic on go after wait", func(t *testing.T) {
+	t.Run("should not panic on Go after Wait", func(t *testing.T) {
 		t.Parallel()
 
 		pool := gopool.New()
@@ -253,6 +256,6 @@ func TestPool_GoAfterWait(t *testing.T) {
 
 		require.NotPanics(t, func() {
 			pool.Go(func() error { return nil })
-		}, "go after wait should cause a panic")
+		}, "Go after Wait should not cause a panic")
 	})
 }

@@ -18,10 +18,11 @@ func TestStream_Go(t *testing.T) {
 	t.Run("base", func(t *testing.T) {
 		t.Parallel()
 
+		// Test basic execution of tasks
 		stream := gostream.New()
 		var workerPoolCounter, callbackCounter atomic.Int64
-		const num = 3
-		for i := 0; i < num; i++ {
+		const numTasks = 3
+		for i := 0; i < numTasks; i++ {
 			stream.Go(func() (gostream.Callback, error) {
 				workerPoolCounter.Add(1)
 
@@ -36,19 +37,20 @@ func TestStream_Go(t *testing.T) {
 
 		stream.Wait()
 
-		require.Equal(t, int64(num), workerPoolCounter.Load())
-		require.Equal(t, int64(num), callbackCounter.Load())
+		require.Equal(t, int64(numTasks), workerPoolCounter.Load())
+		require.Equal(t, int64(numTasks), callbackCounter.Load())
 	})
 
 	t.Run("consistency is maintained", func(t *testing.T) {
 		t.Parallel()
 
+		// Test that tasks maintain consistency in execution order
+		const maxGoroutines = 10
 		syncer := make(chan struct{})
 		counter := atomic.Int64{}
+		stream := gostream.New(gostream.MaxGoroutines(maxGoroutines))
 
-		stream := gostream.New(gostream.MaxGoroutines(10))
-
-		// the first task that takes a long time to complete
+		// Long-running first task
 		stream.Go(func() (gostream.Callback, error) {
 			syncer <- struct{}{}
 			<-syncer
@@ -56,42 +58,42 @@ func TestStream_Go(t *testing.T) {
 			return func() error {
 				require.Zero(t, counter.Load())
 				counter.Add(1)
-
 				return nil
 			}, nil
 		})
 
 		<-syncer
-		for i := 1; i < 10; i++ {
+		for i := 1; i < maxGoroutines; i++ {
+			index := i
 			stream.Go(func() (gostream.Callback, error) {
 				return func() error {
-					require.Equal(t, int64(i), counter.Load())
+					require.Equal(t, int64(index), counter.Load())
 					counter.Add(1)
-
 					return nil
 				}, nil
 			})
 		}
+
 		syncer <- struct{}{}
 		stream.Wait()
 
-		require.Equal(t, int64(10), counter.Load())
+		require.Equal(t, int64(maxGoroutines), counter.Load())
 	})
 
 	t.Run("starting after Wait", func(t *testing.T) {
 		t.Parallel()
 
+		// Test behavior when starting tasks after Wait
 		stream := gostream.New()
 		stream.Wait()
 
-		isStarted := false
+		started := false
 		stream.Go(func() (gostream.Callback, error) {
-			isStarted = true
-
-			return nil, nil //nolint: nilnil
+			started = true
+			return nil, nil
 		})
 
-		require.False(t, isStarted)
+		require.False(t, started)
 	})
 }
 
@@ -106,10 +108,13 @@ func TestStream_ContextCancellation(t *testing.T) {
 		stream := gostream.New(gostream.Context(ctx))
 
 		var callbackCounter atomic.Int64
-		for i := 1; i < 10; i++ {
+		const numTasks = 10
+		const cancelIndex = 5
+		for i := 1; i < numTasks; i++ {
+			index := i
 			stream.Go(func() (gostream.Callback, error) {
-				if i == 5 {
-					cancel()
+				if index == cancelIndex {
+					cancel() // Cancel the context on the 5th task
 				}
 
 				return func() error {
@@ -121,21 +126,25 @@ func TestStream_ContextCancellation(t *testing.T) {
 		}
 		stream.Wait()
 
-		require.LessOrEqual(t, callbackCounter.Load(), int64(5))
+		require.LessOrEqual(t, callbackCounter.Load(), int64(cancelIndex))
 	})
 
 	t.Run("callback cancel", func(t *testing.T) {
 		t.Parallel()
 
+		// Test cancellation of tasks via callback cancellation
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		stream := gostream.New(gostream.Context(ctx))
 
 		var callbackCounter atomic.Int64
-		for i := 1; i < 10; i++ {
+		const numTasks = 10
+		const cancelIndex = 5
+		for i := 1; i < numTasks; i++ {
+			index := i
 			stream.Go(func() (gostream.Callback, error) {
 				return func() error {
-					if i == 5 {
+					if index == cancelIndex {
 						cancel()
 					}
 					callbackCounter.Add(1)
@@ -146,22 +155,25 @@ func TestStream_ContextCancellation(t *testing.T) {
 		}
 		stream.Wait()
 
-		require.Equal(t, int64(5), callbackCounter.Load())
+		require.Equal(t, int64(cancelIndex), callbackCounter.Load())
 	})
 
 	t.Run("errorHandler cancel", func(t *testing.T) {
 		t.Parallel()
 
+		// Test cancellation of tasks via errorHandler
 		ctx, cancel := context.WithCancel(context.Background())
-		stream := gostream.New(gostream.Context(ctx), gostream.ErrorHandler(func(_ error) {
-			cancel()
-		}))
+		errHandler := func(_ error) { cancel() }
+		stream := gostream.New(gostream.Context(ctx), gostream.ErrorHandler(errHandler))
 
 		var callbackCounter atomic.Int64
-		for i := 1; i < 10; i++ {
+		const numTasks = 10
+		const errorIndex = 5
+		for i := 1; i < numTasks; i++ {
+			index := i
 			stream.Go(func() (gostream.Callback, error) {
-				if i == 5 {
-					return nil, errors.New("test error")
+				if index == errorIndex {
+					return nil, errors.New("test error") // Trigger error to cancel
 				}
 
 				return func() error {
@@ -173,7 +185,7 @@ func TestStream_ContextCancellation(t *testing.T) {
 		}
 		stream.Wait()
 
-		require.Equal(t, int64(4), callbackCounter.Load())
+		require.Equal(t, int64(errorIndex-1), callbackCounter.Load())
 	})
 }
 
@@ -183,20 +195,22 @@ func TestStream_ErrorHandler(t *testing.T) {
 	t.Run("worker pool error", func(t *testing.T) {
 		t.Parallel()
 
-		errExpected := errors.New("task error")
+		// Test handling of errors in the worker pool
+		expectedError := errors.New("task error")
 		var errorCalled atomic.Bool
 		var errorCounter atomic.Int64
-		stream := gostream.New(gostream.ErrorHandler(func(err error) {
-			require.Equal(t, errExpected, err)
+		errHandler := func(err error) {
+			require.Equal(t, expectedError, err)
 			errorCalled.Store(true)
 			errorCounter.Add(1)
-		}))
+		}
 
+		stream := gostream.New(gostream.ErrorHandler(errHandler))
 		stream.Go(func() (gostream.Callback, error) {
-			return nil, errExpected
+			return nil, expectedError
 		})
-
 		stream.Wait()
+
 		require.True(t, errorCalled.Load())
 		require.Equal(t, int64(1), errorCounter.Load())
 	})
@@ -204,22 +218,24 @@ func TestStream_ErrorHandler(t *testing.T) {
 	t.Run("callback pool error", func(t *testing.T) {
 		t.Parallel()
 
-		errExpected := errors.New("callback error")
+		// Test handling of errors in the callback
+		expectedError := errors.New("callback error")
 		var errorCalled atomic.Bool
 		var errorCounter atomic.Int64
-		stream := gostream.New(gostream.ErrorHandler(func(err error) {
-			require.Equal(t, errExpected, err)
+		errHandler := func(err error) {
+			require.Equal(t, expectedError, err)
 			errorCalled.Store(true)
 			errorCounter.Add(1)
-		}))
+		}
 
+		stream := gostream.New(gostream.ErrorHandler(errHandler))
 		stream.Go(func() (gostream.Callback, error) {
 			return func() error {
-				return errExpected
+				return expectedError
 			}, nil
 		})
-
 		stream.Wait()
+
 		require.True(t, errorCalled.Load())
 		require.Equal(t, int64(1), errorCounter.Load())
 	})
@@ -271,15 +287,15 @@ func TestStream_PanicHandler(t *testing.T) {
 
 		var panicCalled atomic.Bool
 		var panicCounter atomic.Int64
-		stream := gostream.New(gostream.PanicHandler(func(_ any) {
+		errHandler := func(_ any) {
 			panicCalled.Store(true)
 			panicCounter.Add(1)
-		}))
+		}
 
+		stream := gostream.New(gostream.PanicHandler(errHandler))
 		stream.Go(func() (gostream.Callback, error) {
 			panic("test panic in worker pool")
 		})
-
 		stream.Wait()
 
 		require.True(t, panicCalled.Load())
@@ -291,17 +307,17 @@ func TestStream_PanicHandler(t *testing.T) {
 
 		var panicCalled atomic.Bool
 		var panicCounter atomic.Int64
-		stream := gostream.New(gostream.PanicHandler(func(_ any) {
+		panicHandler := func(_ any) {
 			panicCalled.Store(true)
 			panicCounter.Add(1)
-		}))
+		}
 
+		stream := gostream.New(gostream.PanicHandler(panicHandler))
 		stream.Go(func() (gostream.Callback, error) {
 			return func() error {
 				panic("test panic in callback")
 			}, nil
 		})
-
 		stream.Wait()
 
 		require.True(t, panicCalled.Load())
@@ -313,21 +329,23 @@ func TestStream_PanicHandler(t *testing.T) {
 
 		var panicCalled atomic.Bool
 		var panicCounter atomic.Int64
-		stream := gostream.New(
-			gostream.PanicHandler(func(_ any) {
-				panicCalled.Store(true)
-				panicCounter.Add(1)
-			}), gostream.ErrorHandler(func(err error) {
-				panic(err)
-			}),
-		)
+		panicHandler := func(_ any) {
+			panicCalled.Store(true)
+			panicCounter.Add(1)
+		}
+		errHandler := func(err error) {
+			panic(err)
+		}
 
+		stream := gostream.New(
+			gostream.PanicHandler(panicHandler),
+			gostream.ErrorHandler(errHandler),
+		)
 		stream.Go(func() (gostream.Callback, error) {
 			return func() error {
 				return errors.New("trigger error handler")
 			}, nil
 		})
-
 		stream.Wait()
 
 		require.True(t, panicCalled.Load())
@@ -343,22 +361,23 @@ func TestStream_Wait(t *testing.T) {
 	stream.Go(func() (gostream.Callback, error) {
 		callbackExecuted.Store(true)
 
-		return nil, nil //nolint: nilnil
+		return nil, nil // Passing nil as the callback function.
 	})
 
 	stream.Wait()
 	require.True(t, callbackExecuted.Load())
 
-	// Test double wait
+	// Test double Wait
 	stream.Wait()
 }
 
 func TestStream_CallbackNilFunction(t *testing.T) {
 	t.Parallel()
 
+	// Test when a nil function is passed as the callback
 	stream := gostream.New()
 	stream.Go(func() (gostream.Callback, error) {
-		return nil, nil //nolint: nilnil // Passing nil as the callback function.
+		return nil, nil // Passing nil as the callback function.
 	})
 
 	stream.Wait()
@@ -370,6 +389,7 @@ func TestPool_Reset(t *testing.T) {
 	t.Run("should reset the stream", func(t *testing.T) {
 		t.Parallel()
 
+		// Test resetting the stream
 		stream := gostream.New()
 		stream.Wait()
 		stream.Reset()

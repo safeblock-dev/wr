@@ -79,7 +79,9 @@ func TestSignalHandler(t *testing.T) {
 			_ = syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 		}()
 
+		// Wait for signal to be processed
 		err := execute()
+
 		require.ErrorIs(t, err, taskgroup.ErrSignal)
 	})
 

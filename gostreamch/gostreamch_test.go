@@ -4,7 +4,6 @@ import (
 	"errors"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/safeblock-dev/wr/gostream"
 	"github.com/safeblock-dev/wr/gostreamch"
@@ -39,7 +38,7 @@ func TestStreamCh_Go(t *testing.T) {
 		require.NoError(t, <-stream.ErrorChannel())
 	})
 
-	t.Run("when there are mistakes and successful tasks", func(t *testing.T) {
+	t.Run("mix of successful and failing tasks", func(t *testing.T) {
 		t.Parallel()
 
 		stream := gostreamch.New()
@@ -48,7 +47,6 @@ func TestStreamCh_Go(t *testing.T) {
 		stream.Go(func() (gostream.Callback, error) {
 			return func() error {
 				successCalled.Store(true)
-
 				return nil
 			}, nil
 		})
@@ -61,7 +59,6 @@ func TestStreamCh_Go(t *testing.T) {
 			stream.Go(func() (gostream.Callback, error) {
 				return func() error {
 					skipCalled.Store(true)
-
 					return nil
 				}, nil
 			})
@@ -77,7 +74,7 @@ func TestStreamCh_Go(t *testing.T) {
 		stream.Wait()
 	})
 
-	t.Run("when a lot of worker error", func(t *testing.T) {
+	t.Run("multiple worker errors", func(t *testing.T) {
 		t.Parallel()
 
 		stream := gostreamch.New()
@@ -92,7 +89,7 @@ func TestStreamCh_Go(t *testing.T) {
 		require.ErrorIs(t, expectedError, <-stream.ErrorChannel())
 	})
 
-	t.Run("when a lot of callback error", func(t *testing.T) {
+	t.Run("multiple callback errors", func(t *testing.T) {
 		t.Parallel()
 
 		stream := gostreamch.New()
@@ -150,7 +147,6 @@ func TestStreamCh_Go(t *testing.T) {
 		stream.Go(task)
 
 		// Wait for all tasks to complete
-		time.Sleep(100 * time.Millisecond)
 		stream.Wait()
 
 		require.True(t, stream.HasError())
@@ -219,7 +215,6 @@ func TestStreamCh_Reset(t *testing.T) {
 		stream.Go(func() (gostream.Callback, error) {
 			return func() error {
 				completed = true
-
 				return nil
 			}, nil
 		})
@@ -232,7 +227,7 @@ func TestStreamCh_Reset(t *testing.T) {
 func TestStreamCh_GoAfterWait(t *testing.T) {
 	t.Parallel()
 
-	t.Run("don't panic on go after wait", func(t *testing.T) {
+	t.Run("should not panic on Go after Wait", func(t *testing.T) {
 		t.Parallel()
 
 		stream := gostreamch.New()
