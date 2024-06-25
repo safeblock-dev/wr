@@ -4,22 +4,16 @@ import (
 	"log"
 	"time"
 
-	"github.com/safeblock-dev/wr/panics"
 	"github.com/safeblock-dev/wr/syncgroup"
 )
 
-// result:
-// 2024/03/20 23:20:26 value: foo
-// 2024/03/20 23:20:26 send panic
-// 2024/03/20 23:20:26 panic: my panic
-
 func main() {
-	// Create a custom panic handler that logs the panic value.
-	panicHandler := syncgroup.PanicHandler(func(recovered panics.Recovered) {
-		log.Println("panic:", recovered.Value)
+	// Custom panic handler function that logs the panic value.
+	panicHandler := syncgroup.PanicHandler(func(pc any) {
+		log.Println("panic:", pc)
 	})
 
-	// Create a new WaitGroup with the custom panic handler.
+	// Create a new WaitGroup instance with the custom panic handler.
 	wg := syncgroup.New(panicHandler)
 
 	// Run a function in a new goroutine that logs a message.

@@ -3,7 +3,7 @@ package taskgroup
 import (
 	"context"
 
-	"github.com/safeblock-dev/wr/panics"
+	"github.com/safeblock-dev/werr"
 	"github.com/safeblock-dev/wr/syncgroup"
 )
 
@@ -27,8 +27,8 @@ type InterruptFn func(err error)
 type InterruptCtxFn func(ctx context.Context, err error)
 
 // New creates a new, empty TaskGroup.
-func New() TaskGroup {
-	return TaskGroup{
+func New() *TaskGroup {
+	return &TaskGroup{
 		actors: nil,
 	}
 }
@@ -59,11 +59,11 @@ func (g *TaskGroup) AddContext(execute ExecuteCtxFn, interrupt InterruptCtxFn) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	g.actors = append(g.actors, actor{
-		func() error {
+		execute: func() error {
 			// Execute the task, passing the cancellable context.
 			return execute(ctx)
 		},
-		func(err error) {
+		interrupt: func(err error) {
 			// Cancel the context and call the interrupt function with the error.
 			cancel()
 			interrupt(ctx, err)
@@ -84,15 +84,13 @@ func (g *TaskGroup) Run() error {
 	defer close(errors)
 
 	// Use syncgroup to manage task goroutines and handle panics.
-	wg := syncgroup.New(syncgroup.PanicHandler(func(recovered panics.Recovered) {
-		errors <- recovered.AsError()
+	wg := syncgroup.New(syncgroup.PanicHandler(func(pc any) {
+		errors <- werr.PanicToError(pc)
 	}))
 
 	for _, a := range g.actors {
 		wg.Go(func() {
-			func(a actor) {
-				errors <- a.execute()
-			}(a)
+			errors <- a.execute()
 		})
 	}
 

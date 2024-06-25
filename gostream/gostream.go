@@ -2,25 +2,22 @@ package gostream
 
 import (
 	"context"
-	"sync"
 	"sync/atomic"
 
 	"github.com/safeblock-dev/wr/gopool"
-	"github.com/safeblock-dev/wr/panics"
-	"github.com/safeblock-dev/wr/syncgroup"
 )
 
 // Stream manages the execution of tasks and their corresponding callbacks.
 type Stream struct {
-	ctx             context.Context
-	callbackQueueCh chan callbackChannel
-	panicHandler    func(recovered panics.Recovered)
-	errorHandler    func(err error) // Handler for errors occurring during task execution.
-	workerPoolOpts  []gopool.Option
-	callbackGroup   syncgroup.WaitGroup
-	workerPool      gopool.Pool
-	initOnce        sync.Once
-	stopped         atomic.Bool
+	ctx             context.Context      // ctx is the current context for the stream.
+	parentCtx       context.Context      // parentCtx is the parent context of the stream.
+	cancelFunc      context.CancelFunc   // cancelFunc cancels the stream context.
+	callbackQueueCh chan callbackChannel // callbackQueueCh is a channel for callback channels.
+	panicHandler    func(any)            // panicHandler handles panics that occur in tasks.
+	errorHandler    func(err error)      // errorHandler handles errors that occur in tasks.
+	workerPool      *gopool.Pool         // workerPool manages the goroutines executing tasks.
+	maxGoroutines   int                  // maxGoroutines is the maximum number of concurrent goroutines.
+	stopped         atomic.Bool          // stopped indicates if the stream has been stopped.
 }
 
 // Task is a function that returns a Callback and an error.
@@ -31,10 +28,8 @@ type Callback func() error
 
 // New creates a new Stream with the provided options.
 func New(options ...Option) *Stream {
-	stream := &Stream{ //nolint:exhaustruct // optimization
-		panicHandler:   DefaultPanicHandler,
-		workerPoolOpts: make([]gopool.Option, 0, workerPoolOptsCount),
-		callbackGroup:  *syncgroup.New(),
+	stream := &Stream{ //nolint: exhaustruct
+		panicHandler: defaultPanicHandler,
 	}
 
 	// Apply all options.
@@ -47,59 +42,74 @@ func New(options ...Option) *Stream {
 		Context(context.Background())(stream)
 	}
 
-	stream.workerPool = *gopool.New(stream.workerPoolOpts...)
-	stream.callbackQueueCh = make(chan callbackChannel, stream.workerPool.MaxGoroutines())
+	if stream.maxGoroutines > 0 {
+		stream.maxGoroutines++
+	}
+
+	stream.workerPool = gopool.New(gopool.MaxGoroutines(stream.maxGoroutines))
+	stream.callbackQueueCh = make(chan callbackChannel, stream.maxGoroutines+1)
+
+	// Start the callback reader with panic protection.
+	stream.workerPool.Go(func() error { stream.callbackReader(); return nil }) //nolint: nlreturn
 
 	return stream
 }
 
 // Go submits a Task to the Stream for execution.
 func (s *Stream) Go(f Task) {
-	if s.IsStopped() {
+	if s.ctx.Err() != nil {
 		return
 	}
 
-	s.initOnce.Do(func() {
-		s.callbackGroup.Go(s.callbackReader) // Start the callback reader with panic protection.
-	})
-
 	queueCh := getCallbackChannel()
+	s.callbackQueueCh <- queueCh
 
 	// Submit the task for execution with panic protection.
-	ok := s.workerPool.Go(func() error {
+	s.workerPool.Go(func() error {
 		defer func() {
 			// Recover from any potential panic in the task function and send a
 			// callbackData with the panic information to the callback reader. This
 			// ensures that the callback reader is not blocked waiting for a callback
 			// that will never come due to the panic.
 			if r := recover(); r != nil {
-				p := panics.NewRecovered(1, r)
-				queueCh <- callbackData{fn: nil, err: nil, panic: &p}
+				defer func() {
+					queueCh <- callbackData{fn: nil, err: nil}
+				}()
+				s.panicHandler(r)
 			}
 		}()
 
 		// Execute the task function and send its result or error (if any) to the
 		// callback reader through the queue channel.
 		callbackFn, err := f()
-		queueCh <- callbackData{fn: callbackFn, err: err, panic: nil}
+		queueCh <- callbackData{fn: callbackFn, err: err}
 
 		return nil
 	})
-	if ok {
-		s.callbackQueueCh <- queueCh
-	}
+}
+
+// Reset reactivates the stream, allowing new tasks to be submitted.
+func (s *Stream) Reset() {
+	s.Wait()
+	Context(s.parentCtx)(s)
+	s.workerPool.Reset()
+	s.callbackQueueCh = make(chan callbackChannel, s.maxGoroutines+1)
+	s.workerPool.Go(func() error { s.callbackReader(); return nil }) //nolint: nlreturn
+	s.stopped.Store(false)
 }
 
 // Wait blocks until all tasks and their callbacks have been executed.
 func (s *Stream) Wait() {
 	if s.stopped.CompareAndSwap(false, true) {
-		defer func() {
-			close(s.callbackQueueCh)
-			s.callbackGroup.Wait()
-		}()
-
+		close(s.callbackQueueCh)
 		s.workerPool.Wait()
+		s.cancelFunc()
 	}
+}
+
+// Cancel cancels the stream, stopping all pending tasks.
+func (s *Stream) Cancel() {
+	s.cancelFunc()
 }
 
 // callbackReader reads callbacks from the callbackQueueCh and executes them.
@@ -107,8 +117,8 @@ func (s *Stream) callbackReader() {
 	for queueCh := range s.callbackQueueCh {
 		data := <-queueCh
 
-		s.callbackHandler(data)
 		putCallbackChannel(queueCh)
+		s.callbackHandler(data)
 	}
 }
 
@@ -116,29 +126,21 @@ func (s *Stream) callbackReader() {
 func (s *Stream) callbackHandler(data callbackData) {
 	defer func() {
 		if r := recover(); r != nil {
-			s.panicHandler(panics.NewRecovered(1, r))
+			s.panicHandler(r)
 		}
 	}()
 
-	switch {
-	case data.panic != nil:
-		s.panicHandler(*data.panic)
-	case data.err != nil:
-		s.errorHandler(data.err)
-	}
 	if s.ctx.Err() != nil {
 		return
 	}
-
-	if data.fn != nil {
-		err := data.fn()
-		if err != nil {
-			s.errorHandler(err)
-		}
+	if data.err != nil {
+		s.errorHandler(data.err)
 	}
-}
+	if data.fn == nil {
+		return
+	}
 
-// IsStopped returns true if the stream is stopped.
-func (s *Stream) IsStopped() bool {
-	return s.stopped.Load()
+	if err := data.fn(); err != nil {
+		s.errorHandler(err)
+	}
 }

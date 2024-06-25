@@ -12,10 +12,10 @@ const maxGoroutines = 10
 
 func BenchmarkWr(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		task := taskgroup.New()
+		tg := taskgroup.New()
 
 		for j := 0; j < maxGoroutines; j++ {
-			task.Add(func() error {
+			tg.Add(func() error {
 				_ = fmt.Sprintf("%d", i)
 
 				return nil
@@ -24,7 +24,7 @@ func BenchmarkWr(b *testing.B) {
 			})
 		}
 
-		_ = task.Run()
+		_ = tg.Run()
 	}
 }
 

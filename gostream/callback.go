@@ -2,23 +2,21 @@ package gostream
 
 import (
 	"sync"
-
-	"github.com/safeblock-dev/wr/panics"
 )
 
 // callbackData represents data associated with a callback, including the callback function and any error.
 type callbackData struct {
-	fn    func() error // The callback function to execute.
-	err   error        // Any error that occurred during task execution.
-	panic *panics.Recovered
+	fn  func() error // fn is the callback function to execute.
+	err error        // err is any error that occurred during task execution.
 }
 
 // callbackChannel is a channel for sending callbackData.
 type callbackChannel chan callbackData
 
 // callbackChPool is a pool of callbackChannels to reduce allocations.
-var callbackChPool = sync.Pool{ //nolint:gochecknoglobals // optimization
-	New: func() any {
+// callbackChPool is a global variable for callbackChannel pooling.
+var callbackChPool = sync.Pool{ //nolint:gochecknoglobals
+	New: func() interface{} {
 		return make(callbackChannel, 1) // Buffer size of 1 to prevent blocking.
 	},
 }

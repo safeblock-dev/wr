@@ -2,21 +2,22 @@ package syncgroup
 
 import (
 	"log"
-
-	"github.com/safeblock-dev/wr/panics"
 )
 
 // Option represents an option that can be passed when instantiating a WaitGroup to customize it.
 type Option func(wg *WaitGroup)
 
-// DefaultPanicHandler is the default panic handler that prints the panic information.
-func DefaultPanicHandler(recovered panics.Recovered) {
-	log.Println(recovered.String())
-}
-
 // PanicHandler allows changing the panic handler function of a WaitGroup.
-func PanicHandler(panicHandler func(recovered panics.Recovered)) Option {
+// It accepts a function that handles a panic and assigns it to WaitGroup's panicHandler field.
+func PanicHandler(panicHandler func(pc any)) Option {
 	return func(wg *WaitGroup) {
 		wg.panicHandler = panicHandler
 	}
+}
+
+// defaultPanicHandler is the default panic handler that prints the panic information to the log.
+// It uses ANSI escape sequences to colorize the error message in red.
+func defaultPanicHandler(pc any) {
+	const red = "\u001B[31m"
+	log.Printf("[%[1]sERROR%[1]s] %v", red, pc)
 }

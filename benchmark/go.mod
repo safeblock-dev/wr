@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/safeblock-dev/werr v0.0.8 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 )
