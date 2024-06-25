@@ -16,6 +16,7 @@ func main() {
 	// Submit a task to the pool that logs a value.
 	pool.Go(func() error {
 		log.Println("value:", "foo")
+
 		return nil // Return nil to indicate no error.
 	})
 
