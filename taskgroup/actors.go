@@ -2,12 +2,9 @@ package taskgroup
 
 import (
 	"context"
-	"errors"
 	"os"
 	"os/signal"
 )
-
-var ErrSignal = errors.New("signal error")
 
 // ContextHandler returns an actor, i.e. an execute and interrupt func, that
 // terminates when the provided context is canceled.
@@ -32,12 +29,13 @@ func SignalHandler(ctx context.Context, signals ...os.Signal) (ExecuteFn, Interr
 		signal.Notify(sig, signals...)
 		defer signal.Stop(sig)
 		select {
-		case <-sig:
-			return ErrSignal
+		case s := <-sig:
+			return errSignal{s}
 		case <-ctx.Done():
 			return ctx.Err()
 		}
 	}
+
 	interrupt := func(_ error) {
 		cancel()
 	}

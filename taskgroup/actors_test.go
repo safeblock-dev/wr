@@ -82,7 +82,7 @@ func TestSignalHandler(t *testing.T) {
 		// Wait for signal to be processed
 		err := execute()
 
-		require.ErrorIs(t, err, taskgroup.ErrSignal)
+		require.True(t, taskgroup.IsSignalError(err))
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
