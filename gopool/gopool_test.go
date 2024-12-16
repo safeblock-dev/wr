@@ -22,9 +22,9 @@ func TestPool_Go(t *testing.T) {
 
 		var counter atomic.Uint64
 		pool := gopool.New()
-		numTasks := 10
+		numTasks := uint64(10)
 
-		for i := 0; i < numTasks; i++ {
+		for i := uint64(0); i < numTasks; i++ {
 			pool.Go(func() error {
 				counter.Add(1)
 				return nil
@@ -33,7 +33,7 @@ func TestPool_Go(t *testing.T) {
 
 		pool.Wait()
 
-		require.Equal(t, uint64(numTasks), counter.Load(), "All tasks should be executed")
+		require.Equal(t, numTasks, counter.Load(), "All tasks should be executed")
 	})
 
 	t.Run("with max goroutines", func(t *testing.T) {
@@ -85,9 +85,9 @@ func TestPool_Go(t *testing.T) {
 
 		var counter atomic.Uint64
 		pool := gopool.New()
-		numTasks := 10
+		numTasks := uint64(10)
 
-		for i := 0; i < numTasks; i++ {
+		for i := uint64(0); i < numTasks; i++ {
 			if i%3 == 0 {
 				pool.Go(func() error {
 					counter.Add(1)
@@ -103,7 +103,7 @@ func TestPool_Go(t *testing.T) {
 
 		pool.Wait()
 
-		require.Equal(t, uint64(numTasks), counter.Load())
+		require.Equal(t, numTasks, counter.Load())
 	})
 }
 

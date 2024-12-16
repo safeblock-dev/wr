@@ -6,10 +6,11 @@ import (
 )
 
 var (
-	Interrupt error = errSignal{os.Interrupt}
-	Kill      error = errSignal{os.Kill}
+	Interrupt error = errSignal{os.Interrupt} //nolint:errname,gochecknoglobals // Satisfies the os.Interrupt.
+	Kill      error = errSignal{os.Kill}      //nolint:errname,gochecknoglobals // Satisfies the os.Kill.
 )
 
+//nolint:errname // local error.
 type errSignal struct {
 	sig os.Signal
 }
