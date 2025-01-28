@@ -33,7 +33,7 @@ func TestPool_Go(t *testing.T) {
 
 		pool.Wait()
 
-		require.Equal(t, uint64(numTasks), counter.Load(), "All tasks should be executed")
+		require.EqualValues(t, numTasks, counter.Load(), "All tasks should be executed")
 	})
 
 	t.Run("with max goroutines", func(t *testing.T) {
@@ -72,10 +72,10 @@ func TestPool_Go(t *testing.T) {
 				g.Wait() // Wait for all tasks to complete.
 
 				// Verify that the concurrency limit was never exceeded.
-				require.Equal(t, int64(0), errCount.Load())
+				require.Zero(t, errCount.Load())
 
 				// Verify that all goroutines have completed.
-				require.Equal(t, int64(0), currentConcurrent.Load())
+				require.Zero(t, currentConcurrent.Load())
 			})
 		}
 	})
@@ -103,7 +103,7 @@ func TestPool_Go(t *testing.T) {
 
 		pool.Wait()
 
-		require.Equal(t, uint64(numTasks), counter.Load())
+		require.EqualValues(t, numTasks, counter.Load())
 	})
 }
 
