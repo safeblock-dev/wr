@@ -30,7 +30,7 @@ func SignalHandler(ctx context.Context, signals ...os.Signal) (ExecuteFn, Interr
 		defer signal.Stop(sig)
 		select {
 		case s := <-sig:
-			return errSignal{s}
+			return signalError{s}
 		case <-ctx.Done():
 			return ctx.Err()
 		}
