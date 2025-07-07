@@ -60,6 +60,16 @@ func (p *PoolCh) Reset() {
 	p.errOnce = sync.Once{}
 }
 
+func (p *PoolCh) Hold() error {
+	p.Wait()
+	if p.HasError() {
+		return p.Error()
+	}
+	p.Reset()
+
+	return nil
+}
+
 // ErrorChannel returns a channel that can be used to receive errors that occur in the pool.
 func (p *PoolCh) ErrorChannel() <-chan error {
 	return p.errCh
