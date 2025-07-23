@@ -62,10 +62,10 @@ func (p *PoolCh) Reset() {
 
 func (p *PoolCh) Hold() error {
 	p.Wait()
+	defer p.Reset()
 	if p.HasError() {
 		return p.Error()
 	}
-	p.Reset()
 
 	return nil
 }
